@@ -69,7 +69,7 @@ contract IQoutationFeatch {
     }
 
     // Method to get a multi-hop quote
-    function GetMultiHopQuote(address[] memory transactionOrder, uint256 gasLimit) public view returns (uint256) {
+    function GetMultiHopQuote(address[] memory transactionOrder, uint256 gasLimit) public  returns (uint256) {
         require(transactionOrder.length >= 2, "Transaction order must have at least two tokens");
 
         
@@ -81,7 +81,7 @@ contract IQoutationFeatch {
     }
 
     // Method to get the best swap route between two token pairs
-    function GetSwapRoute(address pair1, address pair2) public view returns (address[] memory) {
+    function GetSwapRoute(address pair1, address pair2) public  returns (address[] memory) {
         address[] memory route = new address[](2);
         route[0] = pair1;
         route[1] = pair2;
