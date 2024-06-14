@@ -1,0 +1,3 @@
+[submodule "IliquidityPool/lib/forge-std"]
+	path = IliquidityPool/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
