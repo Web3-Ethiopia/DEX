@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
-contract UniswapV3Pool is Ownable {
+contract ILiquidityPool is Ownable {
     IERC20 public token0; // The first token of the pair
     IERC20 public token1; // The second token of the pair
 
@@ -18,10 +18,11 @@ contract UniswapV3Pool is Ownable {
 
     Pool public pool;
 
-    constructor(address _token0, address _token1) {
-        token0 = IERC20(_token0);
-        token1 = IERC20(_token1);
-    }
+    constructor(address _token0, address _token1) Ownable(msg.sender) {
+    token0 = IERC20(_token0);
+    token1 = IERC20(_token1);
+}
+
 
     function initializePool(
         uint256 _sqrtPriceX96,
@@ -69,7 +70,7 @@ contract UniswapV3Pool is Ownable {
     }
 
     function calculateAmount0(uint128 liquidity, uint256 lowerTick, uint256 upperTick)
-        internal
+        public
         pure
         returns (uint256)
     {
@@ -77,7 +78,7 @@ contract UniswapV3Pool is Ownable {
     }
 
     function calculateAmount1(uint128 liquidity, uint256 sqrtPriceX96, uint256 lowerTick)
-        internal
+        public
         pure
         returns (uint256)
     {
