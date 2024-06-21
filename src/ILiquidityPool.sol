@@ -19,10 +19,9 @@ contract ILiquidityPool is Ownable {
     Pool public pool;
 
     constructor(address _token0, address _token1) Ownable(msg.sender) {
-    token0 = IERC20(_token0);
-    token1 = IERC20(_token1);
-}
-
+        token0 = IERC20(_token0);
+        token1 = IERC20(_token1);
+    }
 
     function initializePool(
         uint256 _sqrtPriceX96,
@@ -84,4 +83,14 @@ contract ILiquidityPool is Ownable {
     {
         return uint256(liquidity) * (sqrtPriceX96 - lowerTick);
     }
+
+    // Additional functionality based on DEX essentials
+
+    // Swap function to facilitate token swaps
+    function swap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOutMin, address _to) external {
+        // Implement swapping logic here
+        emit Swap(msg.sender, _tokenIn, _tokenOut, _amountIn, _amountOutMin, _to);
+    }
+
+    event Swap(address indexed sender, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOutMin, address to);
 }

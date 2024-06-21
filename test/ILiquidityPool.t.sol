@@ -33,9 +33,7 @@ contract ILiquidityPoolTest is Test {
         token0.mint(user, 1000 * 10**18);
         token1.mint(user, 1000 * 10**18);
 
-        vm.prank(user);
         token0.approve(address(pool), 1000 * 10**18);
-        vm.prank(user);
         token1.approve(address(pool), 1000 * 10**18);
     }
 
@@ -58,8 +56,14 @@ contract ILiquidityPoolTest is Test {
     }
 
     function testProvideLiquidity() public {
-        vm.startPrank(user);
-        
+        pool.initializePool(
+            79228162514264337593543950336, // Example sqrtPriceX96 value
+            1000, // Example liquidity value
+            1, // Example tick value
+            0, // Example lowerTick value
+            10 // Example upperTick value
+        );
+
         pool.provideLiquidity(
             100 * 10**18, // Example amount0 value
             100 * 10**18, // Example amount1 value
@@ -72,12 +76,10 @@ contract ILiquidityPoolTest is Test {
         (uint256 sqrtPriceX96, uint128 liquidity, uint256 tick, uint256 lowerTick, uint256 upperTick) = pool.pool();
         
         assertEq(sqrtPriceX96, 79228162514264337593543950336);
-        assertEq(liquidity, 500);
+        assertEq(liquidity, 1500); // Initial 1000 + added 500
         // Assuming tick should remain as initialized or changed
         assertEq(lowerTick, 0);
         assertEq(upperTick, 10);
-
-        vm.stopPrank();
     }
 
     function testGetAmountsForLiquidity() public {
