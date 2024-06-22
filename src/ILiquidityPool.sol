@@ -24,7 +24,12 @@ contract LiquidityPool {
         bytes calldata data
     ) external {
         address pool = factory.getPool(token0, token1, fee);
-        require(pool != address(0), "Pool does not exist");
+
+        // Check if pool doesn't exist, create it using the factory
+        if (pool == address(0)) {
+            pool = factory.createPool(token0, token1, fee);
+            require(pool != address(0), "Pool creation failed");
+        }
 
         (uint256 amount0, uint256 amount1) = IUniswapV3Pool(pool).mint(
             msg.sender,
