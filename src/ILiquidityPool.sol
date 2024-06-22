@@ -1,96 +1,56 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import "node_modules/@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import "node_modules/@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
-contract ILiquidityPool is Ownable {
-    IERC20 public token0; // The first token of the pair
-    IERC20 public token1; // The second token of the pair
+contract LiquidityPool {
+    IUniswapV3Factory public immutable factory;
+    address public immutable token0;
+    address public immutable token1;
+    uint24 public immutable fee;
 
-    struct Pool {
-        uint256 sqrtPriceX96; // Current price as Q64.96
-        uint128 liquidity; // Current liquidity in the pool
-        uint256 tick; // Current tick
-        uint256 lowerTick; // Lower bound tick
-        uint256 upperTick; // Upper bound tick
+    constructor(address _factory, address _token0, address _token1, uint24 _fee) {
+        factory = IUniswapV3Factory(_factory);
+        token0 = _token0;
+        token1 = _token1;
+        fee = _fee;
     }
 
-    Pool public pool;
-
-    constructor(address _token0, address _token1) Ownable(msg.sender) {
-        token0 = IERC20(_token0);
-        token1 = IERC20(_token1);
-    }
-
-    function initializePool(
-        uint256 _sqrtPriceX96,
-        uint128 _liquidity,
-        uint256 _tick,
-        uint256 _lowerTick,
-        uint256 _upperTick
-    ) external onlyOwner {
-        pool.sqrtPriceX96 = _sqrtPriceX96;
-        pool.liquidity = _liquidity;
-        pool.tick = _tick;
-        pool.lowerTick = _lowerTick;
-        pool.upperTick = _upperTick;
-    }
-
-    function provideLiquidity(
-        uint256 amount0,
-        uint256 amount1,
-        uint256 sqrtPriceX96,
-        uint128 liquidity,
-        uint256 lowerTick,
-        uint256 upperTick
+    function addLiquidity(
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount,
+        bytes calldata data
     ) external {
-        require(amount0 > 0 && amount1 > 0, "Amounts must be greater than 0");
-        require(lowerTick < upperTick, "Invalid tick range");
+        address pool = factory.getPool(token0, token1, fee);
+        require(pool != address(0), "Pool does not exist");
 
-        token0.transferFrom(msg.sender, address(this), amount0);
-        token1.transferFrom(msg.sender, address(this), amount1);
-
-        // Update pool state
-        pool.sqrtPriceX96 = sqrtPriceX96;
-        pool.liquidity += liquidity;
-        pool.lowerTick = lowerTick;
-        pool.upperTick = upperTick;
+        (uint256 amount0, uint256 amount1) = IUniswapV3Pool(pool).mint(
+            msg.sender,
+            tickLower,
+            tickUpper,
+            amount,
+            data
+        );
+        require(amount0 > 0 && amount1 > 0, "Mint failed");
     }
 
-    function getAmountsForLiquidity(uint128 liquidity, uint256 sqrtPriceX96, uint256 lowerTick, uint256 upperTick)
-        public
-        pure
-        returns (uint256 amount0, uint256 amount1)
-    {
-        // Calculate the amounts of tokens based on the provided liquidity and price range
-        amount0 = calculateAmount0(liquidity, lowerTick, upperTick);
-        amount1 = calculateAmount1(liquidity, sqrtPriceX96, lowerTick);
+    function removeLiquidity(
+        int24 tickLower,
+        int24 tickUpper,
+        uint128 amount
+    ) external {
+        address pool = factory.getPool(token0, token1, fee);
+        require(pool != address(0), "Pool does not exist");
+
+        (uint256 amount0, uint256 amount1) = IUniswapV3Pool(pool).burn(
+            tickLower,
+            tickUpper,
+            amount
+        );
+        require(amount0 > 0 && amount1 > 0, "Burn failed");
     }
 
-    function calculateAmount0(uint128 liquidity, uint256 lowerTick, uint256 upperTick)
-        public
-        pure
-        returns (uint256)
-    {
-        return uint256(liquidity) * (upperTick - lowerTick) / lowerTick / upperTick;
-    }
-
-    function calculateAmount1(uint128 liquidity, uint256 sqrtPriceX96, uint256 lowerTick)
-        public
-        pure
-        returns (uint256)
-    {
-        return uint256(liquidity) * (sqrtPriceX96 - lowerTick);
-    }
-
-    // Additional functionality based on DEX essentials
-
-    // Swap function to facilitate token swaps
-    function swap(address _tokenIn, address _tokenOut, uint256 _amountIn, uint256 _amountOutMin, address _to) external {
-        // Implement swapping logic here
-        emit Swap(msg.sender, _tokenIn, _tokenOut, _amountIn, _amountOutMin, _to);
-    }
-
-    event Swap(address indexed sender, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOutMin, address to);
+    // Additional functions for interacting with Uniswap V3 pools...
 }
