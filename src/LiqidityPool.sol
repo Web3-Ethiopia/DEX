@@ -10,7 +10,7 @@ contract LiquidityPool {
         uint256 reserve0;
         uint256 reserve1;
         uint256 liquidity;
-        PoolPriceRange priceRange;
+        uint256 priceRange;
     }
      struct SwapCache {
         // the protocol fee for the input token
@@ -49,10 +49,15 @@ contract LiquidityPool {
         uint256 rangeHigh;
         uint256 liquidity;
     }
+
         mapping(string => Pool) public pools;
         mapping(address=>mapping(address=>PoolPortion)) public poolPortions;
 
-    event LiquidityAdded(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
+        event LiquidityAdded(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
+        event LiquidityRemoved(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
+        event PoolStateUpdated(address indexed pool, uint256 reserve0, uint256 reserve1, uint256 liquidity);
+       
+  
   function addLiquidity(
         address poolAddress,
         uint256 amount0,
@@ -80,7 +85,25 @@ contract LiquidityPool {
 
         return liquidity;
     }
+ function removeLiquidity(
+        address poolAddress,
+        uint256 liquidity,
+        address provider
+    ) external {
+        Pool storage pool = pools[poolAddress];
 
+        require(pool.token0 != address(0) && pool.token1 != address(0), "Pool does not exist");
+        require(liquidity <= pool.liquidity, "Insufficient liquidity");
+
+        uint256 amount0 = (pool.reserve0 * liquidity) / pool.liquidity;
+        uint256 amount1 = (pool.reserve1 * liquidity) / pool.liquidity;
+
+        pool.reserve0 -= amount0;
+        pool.reserve1 -= amount1;
+        pool.liquidity -= liquidity;
+
+        emit LiquidityRemoved(poolAddress, provider, amount0, amount1, liquidity);
+    }
 
 
 
