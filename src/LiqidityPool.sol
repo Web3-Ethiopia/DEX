@@ -56,8 +56,36 @@ contract LiquidityPool {
         event LiquidityAdded(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
         event LiquidityRemoved(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
         event PoolStateUpdated(address indexed pool, uint256 reserve0, uint256 reserve1, uint256 liquidity);
-       
+   constructor(
+        string memory _poolName,
+        address _token0,
+        address _token1,
+        uint24 _fee,
+        uint256 _lowPrice,
+        uint256 _highPrice
+    ) {
+        require(_token0 != address(0) && _token1 != address(0), "Invalid token address");
+        require(_lowPrice < _highPrice, "Invalid price range");
+
+        PoolPriceRange memory priceRange = PoolPriceRange({
+            minLowerBound: _lowPrice,
+            maxUpperBound: _highPrice
+        });
+
+        Pool memory newPool = Pool({
+            token0: _token0,
+            token1: _token1,
+            fee: _fee,
+            reserve0: 0,
+            reserve1: 0,
+            liquidity: 0,
+            priceRange: priceRange
+        });
+
+        pools[_poolName] = newPool;
+    }     
   
+
   function addLiquidity(
         address poolAddress,
         uint256 amount0,
