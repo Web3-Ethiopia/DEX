@@ -1,30 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
+import ./StructForLp.sol;
+
 contract LiquidityPool {
     uint256 constant Q96 = 2**96;
 
-    struct Pool {
-        address token0;
-        address token1;
-        uint24 fee;
-        uint256 reserve0;
-        uint256 reserve1;
-        uint256 liquidity;
-        PoolPriceRange priceRange;
-    }
-
-    struct PoolPriceRange {
-        uint256 minLowerBound;
-        uint256 maxUpperBound;
-    }
-
-    struct PoolPortion {
-        address poolAddress;
-        uint256 rangeLow;
-        uint256 rangeHigh;
-        uint256 liquidity;
-    }
+   
 
     mapping(string => Pool) public pools;
     mapping(address => mapping(address => PoolPortion)) public poolPortions;
