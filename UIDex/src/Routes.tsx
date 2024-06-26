@@ -3,7 +3,6 @@ import { SwapPage } from "./SwapPage";
 
 export const RouterMain:React.FC=()=>{
     return <Routes>
-    <Route path='/swap' element={<SwapPage />}/>
-    <Route path='/swap' element={<SwapPage />}/>
+    <Route path='/' element={<SwapPage />}/>
    </Routes>
 }
