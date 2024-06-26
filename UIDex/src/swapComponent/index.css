@@ -27,8 +27,8 @@
   }
   
   .header button.active {
-    color: #00c18c; /* Matching the green color in the image */
-    border-bottom: 2px solid #00c18c;
+    color: #db4a15; /* Matching the green color in the image */
+    border-bottom: 2px solid #f09d21;
   }
   
   .token-input {
@@ -107,7 +107,7 @@
   
   .connect-button {
     padding: 15px 20px;
-    background-color: #00c18c;
+    background-color: #d5b549;
     color: white;
     border: none;
     cursor: pointer;
