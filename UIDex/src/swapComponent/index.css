@@ -1,0 +1,120 @@
+.swap-component {
+    background-color: #121212;
+    padding: 20px;
+    border-radius: 20px;
+    width: 400px;
+    margin: auto;
+    color: #fff;
+    font-family: Arial, sans-serif;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .header button {
+    padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    cursor: pointer;
+    background-color: transparent;
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  
+  .header button.active {
+    color: #00c18c; /* Matching the green color in the image */
+    border-bottom: 2px solid #00c18c;
+  }
+  
+  .token-input {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+    background-color: #1e1e1e;
+    padding: 15px;
+    border-radius: 10px;
+  }
+  
+  .token-input input {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 18px;
+  }
+  
+  .token-input select {
+    padding: 10px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 18px;
+  }
+  
+  .estimated-output {
+    margin: 10px 0;
+    background-color: #1e1e1e;
+    padding: 15px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 18px;
+  }
+  
+  .slippage-settings {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0;
+    background-color: #1e1e1e;
+    padding: 15px;
+    border-radius: 10px;
+    color: #fff;
+  }
+  
+  .slippage-settings label {
+    margin: 5px 0;
+    color: #fff;
+  }
+  
+  .slippage-settings select {
+    padding: 10px;
+    background: transparent;
+    border: none;
+    color: #fff;
+  }
+  
+  .slippage-settings input[type="checkbox"] {
+    margin-left: 10px;
+  }
+  
+  .transaction-details {
+    background-color: #1e1e1e;
+    padding: 15px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 16px;
+  }
+  
+  .transaction-details > div {
+    margin: 5px 0;
+  }
+  
+  .connect-button {
+    padding: 15px 20px;
+    background-color: #00c18c;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+    border-radius: 10px;
+    width: 100%;
+    text-align: center;
+  }
+  

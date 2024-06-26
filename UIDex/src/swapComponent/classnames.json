@@ -1,0 +1,17 @@
+{
+    "swapComponent": "bg-background-dark p-8 rounded-xl w-full max-w-md mx-auto text-text-light",
+    "header": "flex justify-center items-center mb-5",
+    "headerButton": "px-5 py-2 mx-1 border-none cursor-pointer bg-transparent text-text-light font-bold",
+    "headerButtonActive": "text-primary border-b-2 border-primary",
+    "tokenInput": "flex items-center my-2 bg-background-light p-6 rounded-lg",
+    "tokenInputField": "flex-1 p-4 bg-transparent border-none text-text-light text-lg",
+    "tokenSelect": "p-4 bg-transparent border-none text-text-light text-lg",
+    "estimatedOutput": "my-2 bg-background-light p-6 rounded-lg text-text-light text-lg",
+    "slippageSettings": "flex justify-between items-center my-2 bg-background-light p-6 rounded-lg text-text-light",
+    "slippageLabel": "mr-2",
+    "slippageSelect": "p-4 bg-transparent border-none text-text-light",
+    "mevProtectionLabel": "flex items-center",
+    "transactionDetails": "bg-background-light p-6 rounded-lg text-text-light text-base",
+    "transactionDetailItem": "my-2",
+    "connectButton": "py-6 px-8 bg-primary text-white border-none cursor-pointer text-base mt-5 rounded-lg w-full text-center"
+  }
