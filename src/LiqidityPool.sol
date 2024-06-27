@@ -3,10 +3,8 @@ pragma solidity ^0.8.0;
 
 import ./StructForLp.sol;
 
-contract LiquidityPool {
+contract LiquidityPool is StructForLp {
     uint256 constant Q96 = 2**96;
-
-   
 
     mapping(string => Pool) public pools;
     mapping(address => mapping(address => PoolPortion)) public poolPortions;
