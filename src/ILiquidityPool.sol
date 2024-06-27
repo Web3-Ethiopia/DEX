@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.0;
-
-import "./structsforLPs.sol";
-import "./iquotationfetch.sol";
-
+pragma solidity 0.7.3;
 interface ILiquidityPool {
 
     struct Pool {
@@ -13,7 +9,7 @@ interface ILiquidityPool {
         uint256 reserve0;
         uint256 reserve1;
         uint256 liquidity;
-        PoolPriceRange priceRange;
+        PoolPriceRange;
     }
 
     function createPool(
@@ -55,3 +51,81 @@ interface ILiquidityPool {
     event LiquidityRemoved(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
     event PoolStateUpdated(address indexed pool, uint256 reserve0, uint256 reserve1, uint256 liquidity);
 }
+contract liquidityPool {
+    struct SwapCache {
+        uint8 feeProtocol;
+        uint128 liquidityStart;
+        uint32 blockTimestamp;
+        bool isOutOfRange;
+        uint160 secondsPerLiquidityCumulativeX128;
+        bool computedLatestObservation;
+    }
+
+    struct SwapState {
+        int256 amountSpecifiedRemaining;
+        int256 amountCalculated;
+        uint160 sqrtPriceX96;
+        int24 tickOfCurrentPrice;
+        uint128 protocolFee;
+        uint128 liquidity;
+    }
+
+    // Example state variables
+    struct Slot0 {
+        uint160 sqrtPriceX96;
+        int24 tick;
+    }
+
+    Slot0 public slot0;
+    address public token0; // Address of ETH token
+    address public token1; // Address of USDC token
+
+    event Swap(
+        address indexed sender,
+        address indexed recipient,
+        int256 amount0,
+        int256 amount1,
+        uint160 sqrtPriceX96,
+        uint128 liquidity,
+        int24 tick
+    );
+
+    function balance1() internal view returns (uint256) {
+        return IERC20(token1).balanceOf(address(this));
+    }
+
+    function swap(address recipient)
+        public
+        returns (int256 amount0, int256 amount1)
+    {
+        int24 nextTick = 85184;
+        uint160 nextPrice = 5604469350942327889444743441197;
+        uint128 liquidity = 1517882343751509868544; 
+
+        amount0 = -8396714242162698; 
+        amount1 = 42 ether; 
+
+        
+        (slot0.tick, slot0.sqrtPriceX96) = (nextTick, nextPrice);
+
+       
+        IERC20(token0).transfer(recipient, uint256(-amount0));
+
+        
+        uint256 balance1Before = balance1();
+        IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1);
+        if (balance1Before + uint256(amount1) < balance1())
+            revert InsufficientInputAmount();
+
+        // Emit Swap event
+        emit Swap(
+            msg.sender,
+            recipient,
+            amount0,
+            amount1,
+            slot0.sqrtPriceX96,
+            liquidity,
+            slot0.tick
+        );
+    }
+
