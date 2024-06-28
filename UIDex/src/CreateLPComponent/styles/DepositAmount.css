@@ -1,0 +1,13 @@
+.deposit-amount {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+  }
+  
+  .deposit-amount input {
+    margin-left: 10px;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  

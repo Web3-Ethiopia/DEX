@@ -9,7 +9,9 @@ import { RouterMain } from './Routes'
 function App() {
 
   return (
+    <div className='w-screen h-screen'>
   <RouterMain />
+  </div>
     
   )
 }
