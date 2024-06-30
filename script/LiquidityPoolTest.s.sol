@@ -1,40 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "forge-std/Script.sol";
 import "../src/LiquidityPool.sol";
+import "../src/StructsForLPs.sol";
+import "forge-std/Script.sol";
 
-contract LiquidityPoolDeploymentScript is Script {
-
+contract LiquidityPoolTestScript is Script, StructsForLPs {
     function run() external {
-        // Fetch the deployer's private key from environment variables
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast();
 
-        // Start broadcasting transactions using the deployer's private key
-        vm.startBroadcast(deployerPrivateKey);
-
-        // Define the parameters for the LiquidityPool constructor
-        string memory poolName = "TestPool";
-        address token0 = address(0x1);
-        address token1 = address(0x2);
-        uint24 fee = 3000;
-        uint256 lowPrice = 1000;
-        uint256 highPrice = 2000;
-
-        // Deploy the LiquidityPool contract
         LiquidityPool liquidityPool = new LiquidityPool(
-            poolName,
-            token0,
-            token1,
-            fee,
-            lowPrice,
-            highPrice
+            address(0x123), // Example token0 address
+            address(0x456), // Example token1 address
+            500,            // Example fee
+            1000,           // Example reserve0
+            2000,           // Example reserve1
+            3000            // Example liquidity
         );
 
-        // Log the address of the deployed contract
-        console.log("LiquidityPool deployed at:", address(liquidityPool));
+        // Example usage of liquidityPool
+        (uint256 reserve0, uint256 reserve1) = liquidityPool.getReserves();
+        console.log("Reserve0:", reserve0);
+        console.log("Reserve1:", reserve1);
 
-        // Stop broadcasting transactions
         vm.stopBroadcast();
     }
 }
