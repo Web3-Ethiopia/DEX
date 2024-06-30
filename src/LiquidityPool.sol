@@ -1,17 +1,36 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import ./StructsForLPs.sol;
+import "./StructsForLPs.sol";
 
 contract LiquidityPool is StructsForLPs {
-    uint256 constant Q96 = 2**96;
+    uint256 public constant Q96 = 2**96;
 
     mapping(string => Pool) public pools;
     mapping(address => mapping(address => PoolPortion)) public poolPortions;
 
-    event LiquidityAdded(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
-    event LiquidityRemoved(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
-    event PoolStateUpdated(address indexed pool, uint256 reserve0, uint256 reserve1, uint256 liquidity);
+    event LiquidityAdded(
+        string indexed poolName,
+        address indexed provider,
+        uint256 amount0,
+        uint256 amount1,
+        uint256 liquidity
+    );
+
+    event LiquidityRemoved(
+        string indexed poolName,
+        address indexed provider,
+        uint256 amount0,
+        uint256 amount1,
+        uint256 liquidity
+    );
+
+    event PoolStateUpdated(
+        string indexed poolName,
+        uint256 reserve0,
+        uint256 reserve1,
+        uint256 liquidity
+    );
 
     constructor(
         string memory _poolName,
@@ -75,51 +94,51 @@ contract LiquidityPool is StructsForLPs {
         string memory poolName,
         uint256 amount0,
         uint256 amount1,
-        uint256 rangeLow,
-        uint256 rangeHigh,
         address provider
-    ) external returns (uint256 liquidity) {
+    ) public returns (uint256) {
         Pool storage pool = pools[poolName];
-
-        require(pool.token0 != address(0) && pool.token1 != address(0), "Pool does not exist");
-        require(rangeLow < rangeHigh, "Invalid price range");
-        require(pool.priceRange.minLowerBound <= rangeLow && pool.priceRange.maxUpperBound >= rangeHigh, "Out of bounds price range");
-
-        uint160 sqrtPriceLow = priceToSqrtPrice(rangeLow);
-        uint160 sqrtPriceHigh = priceToSqrtPrice(rangeHigh);
-        uint160 sqrtPriceCur = priceToSqrtPrice((rangeLow + rangeHigh) / 2);
-
-        uint256 liq0 = liquidity0(amount0, sqrtPriceCur, sqrtPriceHigh);
-        uint256 liq1 = liquidity1(amount1, sqrtPriceCur, sqrtPriceLow);
-
-        liquidity = liq0 < liq1 ? liq0 : liq1;
-
+        uint256 newLiquidity = amount0 + amount1; // Simplified liquidity calculation for demonstration
         pool.reserve0 += amount0;
         pool.reserve1 += amount1;
-        pool.liquidity += liquidity;
+        pool.liquidity += newLiquidity;
 
-        emit LiquidityAdded(poolName, provider, amount0, amount1, liquidity);
+        emit LiquidityAdded(poolName, provider, amount0, amount1, newLiquidity);
+        emit PoolStateUpdated(poolName, pool.reserve0, pool.reserve1, pool.liquidity);
 
-        return liquidity;
+        return newLiquidity;
     }
 
     function removeLiquidity(
         string memory poolName,
-        uint256 liquidity,
+        uint256 liquidityAmount,
         address provider
-    ) external {
+    ) public returns (uint256 amount0, uint256 amount1) {
         Pool storage pool = pools[poolName];
+        require(pool.liquidity >= liquidityAmount, "Not enough liquidity");
 
-        require(pool.token0 != address(0) && pool.token1 != address(0), "Pool does not exist");
-        require(liquidity <= pool.liquidity, "Insufficient liquidity");
-
-        uint256 amount0 = (pool.reserve0 * liquidity) / pool.liquidity;
-        uint256 amount1 = (pool.reserve1 * liquidity) / pool.liquidity;
+        amount0 = (liquidityAmount * pool.reserve0) / pool.liquidity;
+        amount1 = (liquidityAmount * pool.reserve1) / pool.liquidity;
 
         pool.reserve0 -= amount0;
         pool.reserve1 -= amount1;
-        pool.liquidity -= liquidity;
+        pool.liquidity -= liquidityAmount;
 
-        emit LiquidityRemoved(poolName, provider, amount0, amount1, liquidity);
+        emit LiquidityRemoved(poolName, provider, amount0, amount1, liquidityAmount);
+        emit PoolStateUpdated(poolName, pool.reserve0, pool.reserve1, pool.liquidity);
+    }
+
+    function getPoolState(string memory poolName) public view returns (Pool memory) {
+        return pools[poolName];
+    }
+
+    function getReserves(string memory poolName) public view returns (uint256 reserve0, uint256 reserve1) {
+        Pool storage pool = pools[poolName];
+        return (pool.reserve0, pool.reserve1);
+    }
+
+    function getPrice(string memory poolName) public view returns (uint256 price) {
+        Pool storage pool = pools[poolName];
+        // Simplified price calculation for demonstration
+        return (pool.reserve1 * Q96) / pool.reserve0;
     }
 }
