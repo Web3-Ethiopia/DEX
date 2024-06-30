@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: MIT
-// AllPoolManager.sol
 
 pragma solidity ^0.8.0;
+import "./LiquidityPool.sol";
+import "./QoutationFeatch.sol";
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/SafeERC20.sol";
+import "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract AllPoolManager {
-    using SafeERC20 for IERC20;
-
     mapping(address => address) public poolToQuoteFetcher; // Pool address -> Quotation fetcher contract address
     mapping(address => PoolInfo) public poolInfo; // Pool address -> Pool information
 
@@ -34,3 +32,37 @@ contract AllPoolManager {
         require(quoteFetcher != address(0), "Pool has no associated quotation fetcher");
 
         IQoutationFeatch quotationFeatch = IQoutationFeatch(quoteFetcher);
+
+        return quotationFeatch.getPrice(LiquidityPool(poolAddress));
+    }
+
+    function addLiquidity(address poolAddress, uint256 amountA, uint256 amountB) public {
+        LiquidityPool pool = LiquidityPool(poolAddress);
+
+        // Transfer tokens from user to pool
+        IERC20(pool.token0()).transferFrom(msg.sender, poolAddress, amountA);
+        IERC20(pool.token1()).transferFrom(msg.sender, poolAddress, amountB);
+
+        // Update pool information
+        poolInfo[poolAddress].totalLiquidity += pool.addLiquidity(amountA, amountB, msg.sender);
+    }
+
+    function removeLiquidity(address poolAddress, uint256 liquidity) public {
+        LiquidityPool pool = LiquidityPool(poolAddress);
+
+        // Calculate amounts of tokens to be returned
+        (uint256 amountA, uint256 amountB) = pool.removeLiquidity(liquidity, msg.sender);
+
+        // Transfer tokens from pool to user
+        IERC20(pool.token0()).transfer(msg.sender, amountA);
+        IERC20(pool.token1()).transfer(msg.sender, amountB);
+
+        // Update pool information
+        poolInfo[poolAddress].totalLiquidity -= liquidity;
+    }
+
+    function getOracleAddress(address tokenA, address tokenB) internal pure returns (address) {
+        // Placeholder for oracle address retrieval logic
+        return address(0);
+    }
+}

@@ -1,19 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./StructsForLPs.sol";
-import "./ILiquidityPoolInterface.sol";
-import "./IQoutationFeatch.sol"; // Import the interface
 
 contract LiquidityPool is StructsForLPs {
     uint256 public constant Q96 = 2**96;
 
     mapping(string => Pool) public pools;
     mapping(address => mapping(address => PoolPortion)) public poolPortions;
-
-    // Reference to the quotation service
-    IQoutationFeatch public quotationFeatch;
 
     event LiquidityAdded(
         string indexed poolName,
@@ -44,8 +38,7 @@ contract LiquidityPool is StructsForLPs {
         address _token1,
         uint24 _fee,
         uint256 _lowPrice,
-        uint256 _highPrice,
-        IQoutationFeatch _quotationFeatch // Inject quotation service
+        uint256 _highPrice
     ) {
         require(_token0 != address(0) && _token1 != address(0), "Invalid token address");
         require(_lowPrice < _highPrice, "Invalid price range");
@@ -66,7 +59,6 @@ contract LiquidityPool is StructsForLPs {
         });
 
         pools[_poolName] = newPool;
-        quotationFeatch = _quotationFeatch; // Set quotation service
     }
 
     function priceToSqrtPrice(uint256 price) public pure returns (uint160) {
@@ -105,22 +97,10 @@ contract LiquidityPool is StructsForLPs {
         address provider
     ) public returns (uint256) {
         Pool storage pool = pools[poolName];
-        require(amount0 > 0 && amount1 > 0, "Insufficient amount provided");
-
-        // Fetch estimated price using quotation service
-        uint256 estimatedPrice = quotationFeatch.getPrice(address(this));
-        require(estimatedPrice > 0, "Failed to fetch price");
-
-        // Calculate liquidity based
-                // (Consider incorporating price impact calculations here)
-        uint256 newLiquidity = liquidity0(amount0, priceToSqrtPrice(estimatedPrice), priceToSqrtPrice(pool.reserve1)) +
-                                 liquidity1(amount1, priceToSqrtPrice(pool.reserve0), priceToSqrtPrice(estimatedPrice));
-
+        uint256 newLiquidity = amount0 + amount1; // Simplified liquidity calculation for demonstration
         pool.reserve0 += amount0;
         pool.reserve1 += amount1;
         pool.liquidity += newLiquidity;
-
-        // Transfer tokens from provider (implementation omitted for brevity)
 
         emit LiquidityAdded(poolName, provider, amount0, amount1, newLiquidity);
         emit PoolStateUpdated(poolName, pool.reserve0, pool.reserve1, pool.liquidity);
@@ -128,3 +108,37 @@ contract LiquidityPool is StructsForLPs {
         return newLiquidity;
     }
 
+    function removeLiquidity(
+        string memory poolName,
+        uint256 liquidityAmount,
+        address provider
+    ) public returns (uint256 amount0, uint256 amount1) {
+        Pool storage pool = pools[poolName];
+        require(pool.liquidity >= liquidityAmount, "Not enough liquidity");
+
+        amount0 = (liquidityAmount * pool.reserve0) / pool.liquidity;
+        amount1 = (liquidityAmount * pool.reserve1) / pool.liquidity;
+
+        pool.reserve0 -= amount0;
+        pool.reserve1 -= amount1;
+        pool.liquidity -= liquidityAmount;
+
+        emit LiquidityRemoved(poolName, provider, amount0, amount1, liquidityAmount);
+        emit PoolStateUpdated(poolName, pool.reserve0, pool.reserve1, pool.liquidity);
+    }
+
+    function getPoolState(string memory poolName) public view returns (Pool memory) {
+        return pools[poolName];
+    }
+
+    function getReserves(string memory poolName) public view returns (uint256 reserve0, uint256 reserve1) {
+        Pool storage pool = pools[poolName];
+        return (pool.reserve0, pool.reserve1);
+    }
+
+    function getPrice(string memory poolName) public view returns (uint256 price) {
+        Pool storage pool = pools[poolName];
+        // Simplified price calculation for demonstration
+        return (pool.reserve1 * Q96) / pool.reserve0;
+    }
+}
