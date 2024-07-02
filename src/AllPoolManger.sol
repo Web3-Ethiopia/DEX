@@ -6,9 +6,8 @@ import "./LiquidityPool.sol";
 
 contract AllPoolManager {
     
-    // mapping(string => LiquidityPool) liquidityPoolMap;
-    mapping(string => LiquidityPool.Pool) public pools;
-    mapping(address => mapping(address => LiquidityPool.PoolPortion)) public poolPortions;
+    mapping(string => LiquidityPool) liquidityPoolMap;
+    mapping(address => mapping(address=>LiquidityPool.Pool)) public miniPools;
 
     function AddLiquidity(
         string memory name,
@@ -30,9 +29,9 @@ contract AllPoolManager {
         // uint24 _fee,
         // uint256 _lowPrice,
         // uint256 _highPrice
-        // LiquidityPool liquidityPool =
-        //     LiquidityPool(name, token1, token2, token1Amount, token2Amount, lowPrice, highPrice);
+        ILiquidityPool(address(liquidityPoolMap[name])).addLiquidity(address token1, address token2, uint256 token1Amount, uint256 token2Amount, uint256 lowPrice, uint256 highPrice)
         
+        miniPools[address(liquidityPoolMap[name])][msg.sender]=ILiquidityPool(address(liquidityPoolMap[name])).poolPortions[msg.sender];
         
     }
 
@@ -57,6 +56,8 @@ contract AllPoolManager {
         // uint256 _highPrice
         LiquidityPool liquidityPool =
             new LiquidityPool(name, token1, token2, fee, lowPrice, highPrice);
+        
+        liquidityPoolMap[name]=liquidityPool;
         
         
     }
