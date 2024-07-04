@@ -21,4 +21,28 @@ contract LiquidityTest {
         liquidityPool = new LiquidityPool("ETH/DAI", address(token0), address(token1), 3000, 1000, 2000);
     };
     function test() public {};
+      function testAddLiquidity() public {
+        uint256 amount0 = 10 ether;
+        uint256 amount1 = 20 ether;
+
+        token0.approve(address(liquidityPool), amount0);
+        token1.approve(address(liquidityPool), amount1);
+
+        uint256 liquidity = liquidityPool.addLiquidity("ETH/DAI", amount0, amount1, 1100, 1900, owner);
+
+        (,, uint256 reserve0, uint256 reserve1, uint256 poolLiquidity,) = liquidityPool.pools("ETH/DAI");
+
+        assertEq(reserve0, amount0);
+        assertEq(reserve1, amount1);
+        assertEq(poolLiquidity, liquidity);
+    }
+
+
+
+
+
+
+
+
+
 }
