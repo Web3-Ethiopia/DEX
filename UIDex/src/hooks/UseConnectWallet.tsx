@@ -1,36 +1,43 @@
+
 import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
+import { useAccount, useConnect, Connector, useDisconnect } from 'wagmi';
 
-const useConnectWallet = () => {
-  const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
-  const [address, setAddress] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+interface WalletInfo {
+  isConnected: boolean;
+  address: `0x${string}` | null | undefined;
+  ensName?: string | null;
+  ensAvatar?: string | null;
+}
 
-  const connectWallet = async () => {
+
+export function useConnectWallet() {
+  const { connect, connectors } = useConnect();
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  const [walletInfo, setWalletInfo] = useState<WalletInfo>({ isConnected: false, address: null });
+
+  useEffect(() => {
+    if (isConnected) {
+      
+      setWalletInfo({ isConnected, address });
+    } else {
+      setWalletInfo({ isConnected: false, address: null });
+    }
+  }, [isConnected, address]);
+
+  const connectWallet = async (connector: Connector) => {
+    console.log('Connecting with:', connector.name);
     try {
-      if (window.ethereum) {
-        const ethProvider = new ethers.providers.Web3Provider(window.ethereum);
-        await ethProvider.send("eth_requestAccounts", []);
-        const signer = ethProvider.getSigner();
-        const address = await signer.getAddress();
-
-        setProvider(ethProvider);
-        setSigner(signer);
-        setAddress(address);
-      } else {
-        setError("No Ethereum provider found. Install MetaMask.");
-      }
-    } catch (err) {
-      setError("Failed to connect wallet.");
+      await connect({ connector });
+    } catch (error) {
+      console.error("Failed to connect wallet", error);
     }
   };
 
-  useEffect(() => {
-    connectWallet();
-  }, []);
+  const disconnectWallet = () => {
+    console.log('Disconnecting wallet');
+    disconnect();
+  };
 
-  return { provider, signer, address, error, connectWallet };
-};
-
-export default useConnectWallet;
+  return { walletInfo, connectWallet, disconnectWallet, connectors };
+}
