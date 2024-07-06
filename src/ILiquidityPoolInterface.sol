@@ -1,7 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-import "./StructsForLPs.sol";
+pragma solidity ^0.8.26;
+import "./StructsForLP.sol";
 
 interface ILiquidityPool {
     struct SwapCache {

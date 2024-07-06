@@ -1,39 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.26;
 
-import "../interfaces/IAllPoolManager.sol";
+import "./IAllPoolManager.sol";
 import "./LiquidityPool.sol";
 
 contract AllPoolManager {
     
-    mapping(string => LiquidityPool) liquidityPoolMap;
+    mapping(string => LiquidityPool) public liquidityPoolMap;
     mapping(address => mapping(address=>LiquidityPool.Pool)) public miniPools;
 
-    function AddLiquidity(
-        string memory name,
-        address token1,
-        address token2,
-        uint256 token1Amount,
-        uint256 token2Amount,
-        uint256 lowPrice,
-        uint256 highPrice
-    ) external returns (LiquidityPool) {
-        require(highPrice > lowPrice, "high range must exceed low range");
-        // require(
-            
-        //     "Invalid Liquidity"
-        // );
-        //string memory _poolName,
-        // address _token0,
-        // address _token1,
-        // uint24 _fee,
-        // uint256 _lowPrice,
-        // uint256 _highPrice
-        ILiquidityPool(address(liquidityPoolMap[name])).addLiquidity(address token1, address token2, uint256 token1Amount, uint256 token2Amount, uint256 lowPrice, uint256 highPrice)
-        
-        miniPools[address(liquidityPoolMap[name])][msg.sender]=ILiquidityPool(address(liquidityPoolMap[name])).poolPortions[msg.sender];
-        
-    }
+    mapping(string => address) private poolAddresses; // Mapping to store pool addresses
+
+    // Declare the PoolCreated event
+    event PoolCreated(address indexed pool, address indexed token0, address indexed token1, uint24 fee);
 
     function createPool(
         string memory name,
@@ -42,38 +21,27 @@ contract AllPoolManager {
         uint24 fee,
         uint256 lowPrice,
         uint256 highPrice
-    ) external returns (LiquidityPool) {
+    ) external returns (address poolAddress) {
         require(highPrice > lowPrice, "high range must exceed low range");
-        // require(
-            
-        //     "Invalid Liquidity"
-        // );
-        //string memory _poolName,
-        // address _token0,
-        // address _token1,
-        // uint24 _fee,
-        // uint256 _lowPrice,
-        // uint256 _highPrice
-        LiquidityPool liquidityPool =
-            new LiquidityPool(name, token1, token2, fee, lowPrice, highPrice);
-        
-        liquidityPoolMap[name]=liquidityPool;
-        
-        
+        LiquidityPool liquidityPool = new LiquidityPool(name, token1, token2, fee, lowPrice, highPrice);
+        poolAddresses[name] = address(liquidityPool); // Store the pool address
+        emit PoolCreated(address(liquidityPool), token1, token2, fee); // Emit the PoolCreated event
+        return address(liquidityPool);
+    }
+
+    function AddLiquidity(
+        string memory name,
+        uint256 token1Amount,
+        uint256 token2Amount,
+        uint256 lowPrice,
+        uint256 highPrice
+    ) external {
+        require(highPrice > lowPrice, "high range must exceed low range");
+        address poolAddress = poolAddresses[name]; // Retrieve the pool address
+        ILiquidityPool(poolAddress).addLiquidity(poolAddress, token1Amount, token2Amount, lowPrice, highPrice, msg.sender);
     }
 
     function getAvgPrice(uint256 lowPrice, uint256 highPrice) public returns (uint256) {
         return (highPrice - lowPrice) / 2;
     }
-
-    // function requiredLiquidity(uint256 token1Amount, uint256 price, uint256 lowPrice, uint256 highPrice)
-    //     public
-    //     view
-    //     returns (uint256)
-    // {
-    //     liquidity_x =
-    //         (token1Amount * (price ** (1 / 2)) * (highPrice ** (1 / 2))) / ((highPrice ** (1 / 2)) - (price ** (1 / 2)));
-    //     liquidity_y = liquidity_x * ((price ** (1 / 2)) - (lowPrice ** (1 / 2)));
-    //     return liquidity_y;
-    // }
 }

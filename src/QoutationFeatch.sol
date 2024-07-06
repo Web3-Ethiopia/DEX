@@ -29,7 +29,7 @@ contract QuotationFetch is IQuotationFetch {
         return true;
     }
 
-    function liquidityPoolExists(bytes32 poolId) public view override returns (bool) {
+    function liquidityPoolExists(bytes32 poolId) public view override returns(bool) {
         LiquidityPool storage pool = liquidityPools[poolId];
         return pool.reserve0 > 0 || pool.reserve1 > 0;
     }
