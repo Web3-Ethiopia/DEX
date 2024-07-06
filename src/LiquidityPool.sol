@@ -1,65 +1,134 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "./StructsForLPs.sol";
+import "./StructsForLp.sol";
+
+
 
 contract LiquidityPool is StructsForLPs {
-    address public token0;
-    address public token1;
-    uint24 public fee;
+    uint256 constant Q96 = 2**96;
 
-    uint256 private reserve0;
-    uint256 private reserve1;
-    uint256 public liquidity;
+    // The below two mappings have to shift to All pool manager
+    // mapping(string => Pool) public pools;
+    // mapping(address => mapping(address => PoolPortion)) public poolPortions;
+    string public PoolName; 
 
-    Pool public pool;
+    //The address is of the user adding the liquidity
+    mapping(address=>Pool) private userBasedPool;
 
-    constructor(address _token0, address _token1, uint24 _fee, uint256 _reserve0, uint256 _reserve1, uint256 _liquidity) {
-        token0 = _token0;
-        token1 = _token1;
-        fee = _fee;
-        reserve0 = _reserve0;
-        reserve1 = _reserve1;
-        liquidity = _liquidity;
-        pool.token0 = _token0;
-        pool.token1 = _token1;
-        pool.fee = _fee;
-        pool.reserve0 = _reserve0;
-        pool.reserve1 = _reserve1;
-        pool.liquidity = _liquidity;
+    event LiquidityAdded(address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
+    event LiquidityRemoved( address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
+    event PoolStateUpdated(uint256 reserve0, uint256 reserve1, uint256 liquidity);
+
+    constructor(
+        string memory _poolName,
+        address _token0,
+        address _token1,
+        uint24 _fee,
+        uint256 _lowPrice,
+        uint256 _highPrice
+    ) {
+        require(_token0 != address(0) && _token1 != address(0), "Invalid token address");
+        require(_lowPrice < _highPrice, "Invalid price range");
+        PoolName= _poolName;
+
+        PoolPriceRange memory priceRange = PoolPriceRange({
+            minLowerBound: _lowPrice,
+            maxUpperBound: _highPrice
+        });
+
+        Pool memory newPool = Pool({
+            token0: _token0,
+            token1: _token1,
+            fee: _fee,
+            reserve0: 0,
+            reserve1: 0,
+            liquidity: 0,
+            priceRange: priceRange
+        });
+
+        // pools[_poolName] = newPool;
     }
 
-    function getReserves() external view returns (uint256, uint256) {
-        return (reserve0, reserve1);
+    function priceToSqrtPrice(uint256 price) public pure returns (uint160) {
+        return uint160(sqrt(price * Q96));
     }
 
-    function getPrice(string memory /* poolName */) external view returns (uint256) {
-        return reserve0 * 1e18 / reserve1;
+    function sqrt(uint256 x) internal pure returns (uint256) {
+        if (x == 0) return 0;
+        uint256 z = (x + 1) / 2;
+        uint256 y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+        return z;
     }
 
-    function getToken0() external view returns (address) {
-        return token0;
+    function liquidity0(uint256 amount, uint160 pa, uint160 pb) public pure returns (uint256) {
+        if (pa > pb) {
+            (pa, pb) = (pb, pa);
+        }
+        return (amount * uint256(pa) * uint256(pb) / Q96) / (uint256(pb) - uint256(pa));
     }
 
-    function getToken1() external view returns (address) {
-        return token1;
+    function liquidity1(uint256 amount, uint160 pa, uint160 pb) public pure returns (uint256) {
+        if (pa > pb) {
+            (pa, pb) = (pb, pa);
+        }
+        return amount * Q96 / (uint256(pb) - uint256(pa));
     }
 
-    function addLiquidity(uint256 amountA, uint256 amountB, address /* to */) external returns (uint256) {
-        reserve0 += amountA;
-        reserve1 += amountB;
-        return reserve0 + reserve1;
+    function addLiquidity(
+        uint256 amount0,
+        uint256 amount1,
+        uint256 rangeLow,
+        uint256 rangeHigh,
+        address provider
+    ) external returns (uint256 liquidity) {
+        Pool storage pool = userBasedPool[msg.sender];
+
+        require(pool.token0 != address(0) && pool.token1 != address(0), "Pool does not exist");
+        require(rangeLow < rangeHigh, "Invalid price range");
+        require(pool.priceRange.minLowerBound <= rangeLow && pool.priceRange.maxUpperBound >= rangeHigh, "Out of bounds price range");
+
+        uint160 sqrtPriceLow = priceToSqrtPrice(rangeLow);
+        uint160 sqrtPriceHigh = priceToSqrtPrice(rangeHigh);
+        uint160 sqrtPriceCur = priceToSqrtPrice((rangeLow + rangeHigh) / 2);
+
+        uint256 liq0 = liquidity0(amount0, sqrtPriceCur, sqrtPriceHigh);
+        uint256 liq1 = liquidity1(amount1, sqrtPriceCur, sqrtPriceLow);
+
+        liquidity = liq0 < liq1 ? liq0 : liq1;
+
+        pool.reserve0 += amount0;
+        pool.reserve1 += amount1;
+        pool.liquidity += liquidity;
+        //address of the Pool contract being called is further referencing to the poolPortions owner. To be used in AllPoolManager
+        //address(poolPortions[address(this)][poolName]),
+        emit LiquidityAdded( provider, amount0, amount1, liquidity);
+
+        return liquidity;
     }
 
-    function removeLiquidity(uint256 amount, address /* to */) external returns (uint256, uint256) {
-        uint256 amountA = reserve0 * amount / (reserve0 + reserve1);
-        uint256 amountB = reserve1 * amount / (reserve0 + reserve1);
-        reserve0 -= amountA;
-        reserve1 -= amountB;
-        return (amountA, amountB);
-    }
+    function removeLiquidity(
+        uint256 liquidity,
+        address provider
+    ) external {
+        Pool storage pool = userBasedPool[msg.sender];
 
-    function getPoolState() external view returns (Pool memory) {
-        return pool;
+        require(pool.token0 != address(0) && pool.token1 != address(0), "Pool does not exist");
+        require(liquidity <= pool.liquidity, "Insufficient liquidity");
+
+        uint256 amount0 = (pool.reserve0 * liquidity) / pool.liquidity;
+        uint256 amount1 = (pool.reserve1 * liquidity) / pool.liquidity;
+
+        pool.reserve0 -= amount0;
+        pool.reserve1 -= amount1;
+        pool.liquidity -= liquidity;
+
+        //address of the Pool contract being called is further referencing to the poolPortions owner. To be used in AllPoolManager
+//address(poolPortions[address(this)][poolName]),
+        emit LiquidityRemoved( provider, amount0, amount1, liquidity);
     }
 }
