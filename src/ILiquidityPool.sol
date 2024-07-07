@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "./structsforLPs.sol";
-import "./iquotationfetch.sol";
+
 
 interface ILiquidityPool {
-
+ struct PoolPriceRange {
+        uint256 minLowerBound;
+        uint256 maxUpperBound;
+    }
     struct Pool {
         address token0;
         address token1;
@@ -15,6 +17,12 @@ interface ILiquidityPool {
         uint256 liquidity;
         PoolPriceRange priceRange;
     }
+     struct PoolPortion {
+        address poolAddress;
+        uint256 rangeLow;
+        uint256 rangeHigh;
+        uint256 liquidity;
+    }
     struct SwapCache {
         // the protocol fee for the input token
         uint8 feeProtocol;
@@ -23,7 +31,7 @@ interface ILiquidityPool {
         // the timestamp of the current block
         uint32 blockTimestamp;
         // the current value of the tick accumulator, computed only if we cross an initialized tick
-        Bool isOutOfRange;
+        bool isOutOfRange;
         // the current value of seconds per liquidity accumulator, computed only if we cross an initialized tick
         uint160 secondsPerLiquidityCumulativeX128;
         // whether we've computed and cached the above two accumulators
@@ -80,6 +88,8 @@ interface ILiquidityPool {
     function getLiquidityProviders(address pool) external view returns (address[] memory);
 
     function liquidityScan(address[] memory pools) external view returns (uint256[] memory);
+
+    function getProviderPoolDetails(address provider) external view returns (PoolPortion memory);
 
     event PoolCreated(address indexed pool, address indexed token0, address indexed token1, uint24 fee);
     event LiquidityAdded(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);

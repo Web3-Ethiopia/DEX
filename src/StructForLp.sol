@@ -2,6 +2,10 @@
 pragma solidity ^0.8.0;
 
 contract StructsForLPs {
+     struct PoolPriceRange {
+        uint256 minLowerBound;
+        uint256 maxUpperBound;
+    }
     struct Pool {
         address token0;
         address token1;
@@ -12,10 +16,7 @@ contract StructsForLPs {
         PoolPriceRange priceRange;
     }
 
-    struct PoolPriceRange {
-        uint256 minLowerBound;
-        uint256 maxUpperBound;
-    }
+   
 
     struct PoolPortion {
         address poolAddress;

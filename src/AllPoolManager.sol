@@ -1,118 +1,103 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./LiquidityPool.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./ILiquidityPool.sol";
+import "./LiqidityPool.sol";
 
-contract AllPoolManager is Ownable {
 
-    // Mapping to store liquidity pools by their name
-    mapping(string => LiquidityPool) private liquidityPoolMap;
+contract AllPoolManager {
+    mapping(string => address) public liquidityPoolMap;
+    mapping(address => mapping(address => ILiquidityPool.Pool)) public miniPools;
+    mapping(address => mapping(address => ILiquidityPool.PoolPortion)) public poolPortions;
 
-    // Mapping to store user pool portions
-    mapping(address => mapping(address => LiquidityPool.PoolPortion)) public poolPortions;
+    function addLiquidity(
+        string memory name,
+        uint256 amount0,
+        uint256 amount1,
+        uint256 rangeLow,
+        uint256 rangeHigh
+    ) external {
+        require(liquidityPoolMap[name] != address(0), "Pool does not exist");
+        require(rangeHigh > rangeLow, "High range must exceed low range");
 
-    // Event declarations
-    event PoolCreated(string name, address indexed token1, address indexed token2, address poolAddress);
-    event LiquidityAdded(address indexed provider, string poolName, uint256 amount0, uint256 amount1);
-    event LiquidityRemoved(address indexed provider, string poolName, uint256 liquidity);
-    event SwapExecuted(address indexed sender, string poolName, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut);
+        ILiquidityPool(liquidityPoolMap[name]).addLiquidity(
+            liquidityPoolMap[name], amount0, amount1, rangeLow, rangeHigh, msg.sender
+        );
 
-    // Modifier to ensure only the pool owner can perform certain actions
-    modifier onlyPoolOwner(string memory name) {
-        require(poolOwners[name] == msg.sender, "Not pool owner");
-        _;
+        miniPools[liquidityPoolMap[name]][msg.sender] = ILiquidityPool(liquidityPoolMap[name]).getPoolDetails(liquidityPoolMap[name]);
+        poolPortions[liquidityPoolMap[name]][msg.sender] = ILiquidityPool(liquidityPoolMap[name]).getProviderPoolDetails(msg.sender);
     }
 
-    // Modifier to check if a pool exists
-    modifier poolExists(string memory name) {
-        require(address(liquidityPoolMap[name]) != address(0), "Pool does not exist");
-        _;
-    }
-
-    // Mapping to store pool owners by pool name
-    mapping(string => address) public poolOwners;
-
-    // Function to create a new liquidity pool
     function createPool(
         string memory name,
+        address token0,
         address token1,
-        address token2,
         uint24 fee,
         uint256 lowPrice,
         uint256 highPrice
-    ) external onlyOwner returns (LiquidityPool) {
+    ) external returns (address) {
+        require(liquidityPoolMap[name] == address(0), "Pool already exists");
         require(highPrice > lowPrice, "High range must exceed low range");
-        require(address(liquidityPoolMap[name]) == address(0), "Pool already exists");
 
-        LiquidityPool liquidityPool = new LiquidityPool(name, token1, token2, fee, lowPrice, highPrice);
-        liquidityPoolMap[name] = liquidityPool;
-        poolOwners[name] = msg.sender;
+        ILiquidityPool.PoolPriceRange memory priceRange = ILiquidityPool.PoolPriceRange({
+            minLowerBound: lowPrice,
+            maxUpperBound: highPrice
+        });
 
-        emit PoolCreated(name, token1, token2, address(liquidityPool));
-        return liquidityPool;
+        address liquidityPoolAddress = ILiquidityPool(address(new LiquidityPool(name, token0, token1, fee, lowPrice, highPrice))).createPool(
+            token0, token1, fee, priceRange
+        );
+
+        liquidityPoolMap[name] = liquidityPoolAddress;
+        return liquidityPoolAddress;
     }
 
-    // Function to add liquidity to an existing pool
-    function addLiquidity(
-        string memory name,
-        uint256 token1Amount,
-        uint256 token2Amount
-    ) external poolExists(name) onlyPoolOwner(name) returns (uint256 liquidity) {
-        LiquidityPool pool = liquidityPoolMap[name];
-        (uint256 amount0, uint256 amount1) = pool.addLiquidity(token1Amount, token2Amount, msg.sender);
-
-        emit LiquidityAdded(msg.sender, name, amount0, amount1);
-        return liquidity;
-    }
-
-    // Function to remove liquidity from an existing pool
     function removeLiquidity(
         string memory name,
-        uint256 liquidity
-    ) external poolExists(name) onlyPoolOwner(name) returns (uint256 amount0, uint256 amount1) {
-        LiquidityPool pool = liquidityPoolMap[name];
-        (amount0, amount1) = pool.removeLiquidity(liquidity, msg.sender);
+        uint256 liquidityAmount
+    ) external returns (uint256 amount0, uint256 amount1) {
+        require(liquidityPoolMap[name] != address(0), "Pool does not exist");
 
-        emit LiquidityRemoved(msg.sender, name, liquidity);
+        (amount0, amount1) = ILiquidityPool(liquidityPoolMap[name]).removeLiquidity(
+            liquidityPoolMap[name], liquidityAmount, msg.sender
+        );
+
+        miniPools[liquidityPoolMap[name]][msg.sender] = ILiquidityPool(liquidityPoolMap[name]).getPoolDetails(liquidityPoolMap[name]);
+        poolPortions[liquidityPoolMap[name]][msg.sender] = ILiquidityPool(liquidityPoolMap[name]).getProviderPoolDetails(msg.sender);
+
         return (amount0, amount1);
     }
 
-    // Function to execute a swap
-    function swap(
-        string memory name,
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address to
-    ) external poolExists(name) {
-        LiquidityPool pool = liquidityPoolMap[name];
-
-        // Ensure the input token is one of the pool tokens
-        require(tokenIn == address(pool.token0()) || tokenIn == address(pool.token1()), "Invalid input token");
-        // Ensure the output token is one of the pool tokens
-        require(tokenOut == address(pool.token0()) || tokenOut == address(pool.token1()), "Invalid output token");
-
-        // Transfer the input tokens from the sender to this contract
-        IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
-
-        // Perform the swap
-        uint256 amountOut = pool.swap(name, tokenIn, tokenOut, amountIn, amountOutMin, to);
-
-        // Ensure the output amount is greater than or equal to the minimum specified
-        require(amountOut >= amountOutMin, "Output amount less than minimum");
-
-        // Transfer the output tokens to the specified address
-        IERC20(tokenOut).transfer(to, amountOut);
-
-        emit SwapExecuted(msg.sender, name, tokenIn, tokenOut, amountIn, amountOut);
+    function getAvgPrice(uint256 lowPrice, uint256 highPrice) public pure returns (uint256) {
+        return (highPrice + lowPrice) / 2;
     }
 
-    // Function to calculate the average price
-    function getAvgPrice(uint256 lowPrice, uint256 highPrice) public pure returns (uint256) {
-        require(highPrice > lowPrice, "High price must be greater than low price");
-        return (highPrice + lowPrice) / 2;
+    function isMultiHopSwapPossible(string memory pair1, string memory pair2) public view returns (bool) {
+        address pool1 = liquidityPoolMap[pair1];
+        address pool2 = liquidityPoolMap[pair2];
+        if (pool1 == address(0) || pool2 == address(0)) {
+            return false;
+        }
+
+        (uint256 reserve1A, uint256 reserve1B) = ILiquidityPool(pool1).getReserves(pool1);
+        (uint256 reserve2A, uint256 reserve2B) = ILiquidityPool(pool2).getReserves(pool2);
+
+        return (reserve1A > 0 && reserve1B > 0 && reserve2A > 0 && reserve2B > 0);
+    }
+
+    function getProviderBasedOnPool(string memory name, address providerAddress)
+        public
+        view
+        returns (ILiquidityPool.Pool memory)
+    {
+        return ILiquidityPool(liquidityPoolMap[name]).getPoolDetails(liquidityPoolMap[name]);
+    }
+
+    function fetchLiquidityTokenReserves(string memory name) 
+        public 
+        view 
+        returns (uint256 reserve0, uint256 reserve1) 
+    {
+        return ILiquidityPool(liquidityPoolMap[name]).getReserves(liquidityPoolMap[name]);
     }
 }
