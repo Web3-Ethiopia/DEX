@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity 0.7.3;
-interface ILiquidityPool {
+pragma solidity ^0.7.3;
 
+interface ILiquidityPool {
     struct Pool {
         address token0;
         address token1;
@@ -9,7 +9,12 @@ interface ILiquidityPool {
         uint256 reserve0;
         uint256 reserve1;
         uint256 liquidity;
-        PoolPriceRange;
+        PoolPriceRange priceRange;
+    }
+
+    struct PoolPriceRange {
+        uint256 minPrice;
+        uint256 maxPrice;
     }
 
     function createPool(
@@ -51,7 +56,8 @@ interface ILiquidityPool {
     event LiquidityRemoved(address indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
     event PoolStateUpdated(address indexed pool, uint256 reserve0, uint256 reserve1, uint256 liquidity);
 }
-contract liquidityPool {
+
+contract LiquidityPool {
     struct SwapCache {
         uint8 feeProtocol;
         uint128 liquidityStart;
@@ -70,7 +76,6 @@ contract liquidityPool {
         uint128 liquidity;
     }
 
-    // Example state variables
     struct Slot0 {
         uint160 sqrtPriceX96;
         int24 tick;
@@ -103,21 +108,16 @@ contract liquidityPool {
         uint128 liquidity = 1517882343751509868544; 
 
         amount0 = -8396714242162698; 
-        amount1 = 42 ether; 
+        amount1= +42 ether; 
 
-        
         (slot0.tick, slot0.sqrtPriceX96) = (nextTick, nextPrice);
 
-       
         IERC20(token0).transfer(recipient, uint256(-amount0));
 
-        
         uint256 balance1Before = balance1();
         IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1);
         if (balance1Before + uint256(amount1) < balance1())
-            revert InsufficientInputAmount();
-
-        // Emit Swap event
+           declare revert InsufficientInputAmount;
         emit Swap(
             msg.sender,
             recipient,
@@ -129,3 +129,14 @@ contract liquidityPool {
         );
     }
 
+    error InsufficientInputAmount;
+}
+
+interface IERC20 {
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+}
+
+interface IUniswapV3SwapCallback {
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta) external;
+}

@@ -47,8 +47,6 @@ contract PoolManager is IPoolManager, Fees, NoDelegateCall, ERC6909Claims {
 
     // ... [other functions]
 }
-//SPDX-LICENSE-IDENTIFIER:GPL-3.0;
-pragma solidity 0.5.11;
 /// @notice Returns the key for identifying a pool
 pragma  PoolKey {
     /// @notice The lower currency of the pool, sorted numerically
