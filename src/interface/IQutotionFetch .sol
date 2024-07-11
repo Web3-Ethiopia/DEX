@@ -16,3 +16,4 @@ contract IQutotionFetch  {
     function getSwaproute(address pair1, address pair2) external view returns (uint256);
 
 }
+
