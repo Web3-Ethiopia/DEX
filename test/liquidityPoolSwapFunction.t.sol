@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
-import {LiquidityPool} from "../src/liquidityPoolSwapFunction.sol"; 
+import {LiquidityPool} from "../src/contract/liquidityPoolSwapFunction.sol"; 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -122,6 +122,13 @@ contract SwapFunctionTest is Test {
         uint256 finalToken0BalanceUser1 = token0.balanceOf(user1);
         uint256 finalToken1BalanceUser1 = token1.balanceOf(user1);
 
+        // Debugging statements to check values
+        console.log("Initial token0BalanceUser1:", initialToken0BalanceUser1);
+        console.log("Initial token1BalanceUser1:", initialToken1BalanceUser1);
+        console.log("Final token0BalanceUser1:", finalToken0BalanceUser1);
+        console.log("Final token1BalanceUser1:", finalToken1BalanceUser1);
+
+        // Adjust these assertions based on the expected outcome of the swap
         assertEq(finalToken0BalanceUser1, initialToken0BalanceUser1 - SWAP_AMOUNT_IN); // Expect 500 TK0 to be swapped out
         assertTrue(finalToken1BalanceUser1 > initialToken1BalanceUser1); // Adjust based on the amountOut calculated
     }
