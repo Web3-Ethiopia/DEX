@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Dropdown from "./Dropdown";
 import FeeTier from "./FeeTier";
 import PriceRange from "./PriceRange";
@@ -15,28 +15,41 @@ const LiquidityPool: React.FC = () => {
   const { walletInfo, connectWallet, disconnectWallet, connectors } =
     useConnectWallet();
 
-  const handleTokenChange = (newToken: string) => {
-    // Handle token change
+  const [selectedToken1, setSelectedToken1] = useState("ETH");
+  const [selectedToken2, setSelectedToken2] = useState("DAI");
+  const [feeTier, setFeeTier] = useState("0.30%");
+  const [lowPrice, setLowPrice] = useState(1722.6644);
+  const [highPrice, setHighPrice] = useState(5684.8938);
+  const [ethAmount, setEthAmount] = useState(0);
+  const [daiAmount, setDaiAmount] = useState(0);
+
+  const handleTokenChange1 = (newToken: string) => {
+    setSelectedToken1(newToken);
+  };
+
+  const handleTokenChange2 = (newToken: string) => {
+    setSelectedToken2(newToken);
   };
 
   const handleEditFeeTier = () => {
-    // Handle fee tier edit
+    // Handle fee tier edit logic here
+    console.log("Edit fee tier");
   };
 
   const handleLowPriceChange = (newLowPrice: number) => {
-    // Handle low price change
+    setLowPrice(newLowPrice);
   };
 
   const handleHighPriceChange = (newHighPrice: number) => {
-    // Handle high price change
+    setHighPrice(newHighPrice);
   };
 
   const handleEthAmountChange = (newAmount: number) => {
-    // Handle ETH amount change
+    setEthAmount(newAmount);
   };
 
   const handleDaiAmountChange = (newAmount: number) => {
-    // Handle DAI amount change
+    setDaiAmount(newAmount);
   };
 
   const handleConnectWallet = () => {
@@ -71,26 +84,26 @@ const LiquidityPool: React.FC = () => {
 
   return (
     <div
-      className="w-[100%] h-[100%]  py-[4vh] flex justify-center bg-gradient-to-r from-yellow-950 via-amber-600 to-yellow-950  bg-[length:300%_200%] bg-left"
+      className="w-[100%] h-[100%] py-[4vh] flex justify-center bg-gradient-to-r from-yellow-950 via-amber-600 to-yellow-950 bg-[length:300%_200%] bg-left"
       ref={divRef}
     >
       <div className="p-10 flex items-center justify-center flex-col bg-background-dark bg-opacity-90 shadow-orange-300 shadow-inner rounded-md">
         <div className="flex gap-2">
           <Dropdown
             options={["ETH", "DAI"]}
-            selectedOption="ETH"
-            onChange={handleTokenChange}
+            selectedOption={selectedToken1}
+            onChange={handleTokenChange1}
           />
           <Dropdown
             options={["ETH", "DAI"]}
-            selectedOption="DAI"
-            onChange={handleTokenChange}
+            selectedOption={selectedToken2}
+            onChange={handleTokenChange2}
           />
         </div>
-        <FeeTier selectedFeeTier="0.30%" onEdit={handleEditFeeTier} />
+        <FeeTier selectedFeeTier={feeTier} onEdit={handleEditFeeTier} />
         <PriceRange
-          lowPrice={1722.6644}
-          highPrice={5684.8938}
+          lowPrice={lowPrice}
+          highPrice={highPrice}
           onLowPriceChange={handleLowPriceChange}
           onHighPriceChange={handleHighPriceChange}
         />
@@ -99,17 +112,15 @@ const LiquidityPool: React.FC = () => {
         <div className="flex gap-2 p-4">
           <DepositAmount
             token="ETH"
-            amount={0}
+            amount={ethAmount}
             onAmountChange={handleEthAmountChange}
           />
           <DepositAmount
             token="DAI"
-            amount={0}
+            amount={daiAmount}
             onAmountChange={handleDaiAmountChange}
           />
         </div>
-        {/* <ConnectWalletButton onClick={handleConnectWallet} /> */}
-
         <div className="flex gap-2">
           {!walletInfo.isConnected ? (
             <ConnectWalletButton onClick={handleConnectWallet} />
