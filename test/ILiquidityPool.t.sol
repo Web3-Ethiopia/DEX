@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.7.3;
-import ""
+pragma solidity ^0.8.0;
+import "DEX/ILiquidityPool.sol";
 interface ILiquidityPool {
     struct Pool {
         address token0;
