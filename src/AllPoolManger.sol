@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-// import "../interfaces/IAllPoolManager.sol";
-import "./LiquidityPool.sol";
+import "./LiquidityPool (1).sol";
 
 contract AllPoolManager {
     
     mapping(string => LiquidityPool) liquidityPoolMap;
-    mapping(address => mapping(address=>LiquidityPool.Pool)) public miniPools;
+    mapping(address => mapping(address => LiquidityPool.Pool)) public miniPools;
 
     function AddLiquidity(
         string memory name,
@@ -19,20 +18,17 @@ contract AllPoolManager {
         uint256 highPrice
     ) external returns (LiquidityPool) {
         require(highPrice > lowPrice, "high range must exceed low range");
-        // require(
-            
-        //     "Invalid Liquidity"
-        // );
-        //string memory _poolName,
-        // address _token0,
-        // address _token1,
-        // uint24 _fee,
-        // uint256 _lowPrice,
-        // uint256 _highPrice
-        ILiquidityPool(address(liquidityPoolMap[name])).addLiquidity(address token1, address token2, uint256 token1Amount, uint256 token2Amount, uint256 lowPrice, uint256 highPrice)
         
-        miniPools[address(liquidityPoolMap[name])][msg.sender]=ILiquidityPool(address(liquidityPoolMap[name])).poolPortions[msg.sender];
+        // Ensure the liquidity pool exists
+        require(address(liquidityPoolMap[name]) != address(0), "Liquidity pool does not exist");
+
+        // Call addLiquidity function on the liquidity pool instance
+        ILiquidityPool(address(liquidityPoolMap[name])).addLiquidity(token1, token2, token1Amount, token2Amount, lowPrice, highPrice);
         
+        // Assuming poolPortions is a public mapping in LiquidityPool
+        miniPools[address(liquidityPoolMap[name])][msg.sender] = ILiquidityPool(address(liquidityPoolMap[name])).poolPortions[msg.sender];
+        
+        return liquidityPoolMap[name];
     }
 
     function createPool(
@@ -44,36 +40,17 @@ contract AllPoolManager {
         uint256 highPrice
     ) external returns (LiquidityPool) {
         require(highPrice > lowPrice, "high range must exceed low range");
-        // require(
-            
-        //     "Invalid Liquidity"
-        // );
-        //string memory _poolName,
-        // address _token0,
-        // address _token1,
-        // uint24 _fee,
-        // uint256 _lowPrice,
-        // uint256 _highPrice
-        LiquidityPool liquidityPool =
-            new LiquidityPool(name, token1, token2, fee, lowPrice, highPrice);
         
-        liquidityPoolMap[name]=liquidityPool;
+        // Create a new liquidity pool instance
+        LiquidityPool liquidityPool = new LiquidityPool(name, token1, token2, fee, lowPrice, highPrice);
         
+        // Store the liquidity pool instance in the map
+        liquidityPoolMap[name] = liquidityPool;
         
+        return liquidityPool;
     }
 
-    function getAvgPrice(uint256 lowPrice, uint256 highPrice) public returns (uint256) {
-        return (highPrice - lowPrice) / 2;
+    function getAvgPrice(uint256 lowPrice, uint256 highPrice) public pure returns (uint256) {
+        return (highPrice + lowPrice) / 2;
     }
-
-    // function requiredLiquidity(uint256 token1Amount, uint256 price, uint256 lowPrice, uint256 highPrice)
-    //     public
-    //     view
-    //     returns (uint256)
-    // {
-    //     liquidity_x =
-    //         (token1Amount * (price ** (1 / 2)) * (highPrice ** (1 / 2))) / ((highPrice ** (1 / 2)) - (price ** (1 / 2)));
-    //     liquidity_y = liquidity_x * ((price ** (1 / 2)) - (lowPrice ** (1 / 2)));
-    //     return liquidity_y;
-    // }
 }
