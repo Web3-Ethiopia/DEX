@@ -52,7 +52,7 @@
     ILiquidityPool(address poolContract).changeReserveThroughSwap(DAI/USDT);
     ```
 
-## Swap Scenario Example
+## Swap Scenario And LP Reward Tokens minting  Example
 - 1. Liquidity provider provides 3160 Dai along with 1 Eth
 
 - 2. user 1 comes and uses his pool for obtaining 0.5 eth 1580*0.3 *1/100 = 4.74 Dai worth of LP Rewards
