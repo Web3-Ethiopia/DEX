@@ -5,9 +5,15 @@ import {Test, console} from "../forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+
 interface IAllPoolManager {
     function fetchTokenReserves(string memory poolName) external view returns (uint256, uint256);
     function isMultiHopSwapPossible(string memory poolName) external view returns (bool);
+}
+
+interface IliquidityPool {
+    function liquidity0(uint256 amount, uint160 pa, uint160 pb) external pure  returns(uint256);
+    function liquidity1(uint256 amount, uint160 pa, uint160 pb) external pure returns(uint256);
 }
 
 contract LiquidityPool is Ownable {
@@ -52,10 +58,12 @@ contract LiquidityPool is Ownable {
     Pool[] public pools;
     mapping(string => uint256) public poolIndex; // Map pool name to index
     IAllPoolManager public allPoolManager;
+    IliquidityPool public liquidityPool;
 
-    constructor(address _token0, address _token1, address initialOwner) Ownable(initialOwner) {
+    constructor(address _token0, address _token1, address initialOwner, address _IliquidityPool) Ownable(initialOwner) {
         token0 = IERC20(_token0);
         token1 = IERC20(_token1);
+        liquidityPool = IliquidityPool(_IliquidityPool);
     }
 
     function createPool(
@@ -157,14 +165,16 @@ function _performSwap(
     uint160 sqrtPriceCX96 = state.sqrtPriceX96;
     uint256 liquidity = state.liquidity;
 
-    console.log("Performing swap with initial sqrtPriceX96:", state.sqrtPriceX96);
+    // console.log("Performing swap with initial sqrtPriceX96:", state.sqrtPriceX96);
+    uint256 liquidity0 = liquidityPool.liquidity0(_amountIn, sqrtPriceBX96, sqrtPriceCX96);
+    uint256 liquidity1 = liquidityPool.liquidity1(_amountIn, sqrtPriceBX96, sqrtPriceCX96);
 
     // Simplified price calculation for demonstration purposes
-    uint256 priceDiff = (liquidity * _amountIn) / (uint256(sqrtPriceBX96) * uint256(sqrtPriceCX96));
+    uint256 priceDiff = (liquidity * liquidity0) / liquidity1;
     uint160 newSqrtPriceX96 = uint160(uint256(sqrtPriceBX96) + priceDiff);
 
-    console.log("Calculated price difference:", priceDiff);
-    console.log("New sqrtPriceX96 after price difference:", newSqrtPriceX96);
+    // console.log("Calculated price difference:", priceDiff);
+    // console.log("New sqrtPriceX96 after price difference:", newSqrtPriceX96);
 
     if (_tokenIn == address(token0) && _tokenOut == address(token1)) {
         amountOut = (_amountIn * uint256(sqrtPriceBX96)) / uint256(sqrtPriceCX96);
