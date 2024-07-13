@@ -45,4 +45,6 @@ contract AllPoolManager {
     function getAvgPrice(uint256 lowPrice, uint256 highPrice) public returns (uint256) {
         return (highPrice - lowPrice) / 2;
     }
+
+    // hello
 }
