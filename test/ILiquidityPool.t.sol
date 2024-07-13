@@ -108,7 +108,7 @@ contract LiquidityPool {
         uint128 liquidity = 1517882343751509868544; 
 
         amount0 = -8396714242162698; 
-        amount1= +42 ether; 
+        amount1 = 42 ether; 
 
         (slot0.tick, slot0.sqrtPriceX96) = (nextTick, nextPrice);
 
@@ -116,7 +116,7 @@ contract LiquidityPool {
 
         uint256 balance1Before = balance1();
         IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1);
-        if (balance1Before + uint256(amount1) < balance1())
+        if (balance1Before + uint256(amount1) < balance1()) 
            declare revert InsufficientInputAmount;
         emit Swap(
             msg.sender,
