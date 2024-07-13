@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import "./IAllPoolManager.sol";
 import "./LiquidityPool.sol";
+import "./StructsForLP.sol";
 
 contract AllPoolManager {
     
