@@ -51,3 +51,19 @@
     ILiquidityPool(address poolContract).changeReserveThroughSwap(ETH/USDT);
     ILiquidityPool(address poolContract).changeReserveThroughSwap(DAI/USDT);
     ```
+
+## Swap Scenario Example
+- 1. Liquidity provider provides 3160 Dai along with 1 Eth
+
+- 2. user 1 comes and uses his pool for obtaining 0.5 eth 1580*0.3 *1/100 = 4.74 Dai worth of LP Rewards
+Liquidity state now -> 0.5 Eth, 4740 DAI
+
+3. user 2 comes and does a swap for 0.1 ETH  => 474 * 0.3 *1/100 = 1.42
+Liquidity state now -> 0.4 Eth, 5214 DAI
+
+4. user 3 comes and does a swap for 521.4 Dai  => 0.04 * 0.3 * 1/100= 0.00012 ETH of LP Rewards
+Liquidity state now -> 0.5 Eth, 4692.6 DAI 
+
+5. Provider removes liquidity
+Liqudity + LPRewards
+0.5 ETH + 0.00012 back, 5214 Dai + 6.16 DAI
