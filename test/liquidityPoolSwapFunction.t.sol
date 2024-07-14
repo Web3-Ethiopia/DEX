@@ -5,7 +5,6 @@ import {Test, console} from "forge-std/Test.sol";
 import {LiquidityPool} from "../src/liquidityPoolSwapFunction.sol"; 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ILiquidityPool} from "../src/LiquidityPool (1).sol";
 
 // Mock ERC20 Token for testing
 contract MockERC20 is ERC20 {
@@ -25,7 +24,6 @@ contract SwapFunctionTest is Test {
     LiquidityPool liquidityPool;
     MockERC20 token0;
     MockERC20 token1;
-    ILiquidityPool iliquidityPool;
     address initialOwner = address(0x789);
     address user1 = address(0x123);
     address user2 = address(0x456);
@@ -46,8 +44,6 @@ contract SwapFunctionTest is Test {
         // Deploy mock tokens
         token0 = new MockERC20("Token0", "TK0");
         token1 = new MockERC20("Token1", "TK1");
-
-        liquidityPool = new LiquidityPool();
 
         // Deploy the LiquidityPool contract
         vm.prank(initialOwner);
