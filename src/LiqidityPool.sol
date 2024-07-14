@@ -11,6 +11,8 @@ contract LiquidityPool is StructsForLPs, Ownable {
 
     mapping(string => Pool) public pools;
     mapping(address => mapping(address => PoolPortion)) public poolPortions;
+    mapping(address => uint256) public liquidityProviderVolume; 
+    mapping(address => uint256) public liquidityProviderTime;
 
     event LiquidityAdded(string indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
     event LiquidityRemoved(string indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
@@ -164,8 +166,10 @@ contract LiquidityPool is StructsForLPs, Ownable {
         emit PoolStateUpdated(address(this), pool.reserve0, pool.reserve1, pool.liquidity);
     }
 
-    function calculateRewards(uint256 amountIn) internal pure returns (uint256) {
-        // Placeholder: Implement a more complex rewards calculation
-        return amountIn / 10;
+      function calculateRewards(uint256 amountIn, uint256 totalVolume, address provider) internal view returns (uint256) {
+        uint256 volumeFactor = (liquidityProviderVolume[provider] * 1e18) / totalVolume;
+        uint256 timeFactor = (block.timestamp - liquidityProviderTime[provider]) * 1e18 / (30 days); // Example: 30 days as a base time unit
+        uint256 reward = amountIn * volumeFactor * timeFactor / 1e36; // Adjusting for decimal scaling
+        return reward;
     }
 }
