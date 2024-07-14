@@ -2,9 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "./StructForLp.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract LiquidityPool is StructsForLPs{
+contract LiquidityPool is StructsForLPs, Ownable {
     uint256 constant Q96 = 2**96;
+    IERC20 public lpRewardsToken;
 
     mapping(string => Pool) public pools;
     mapping(address => mapping(address => PoolPortion)) public poolPortions;
@@ -19,7 +22,8 @@ contract LiquidityPool is StructsForLPs{
         address _token1,
         uint24 _fee,
         uint256 _lowPrice,
-        uint256 _highPrice
+        uint256 _highPrice,
+        address _lpRewardsToken
     ) {
         require(_token0 != address(0) && _token1 != address(0), "Invalid token address");
         require(_lowPrice < _highPrice, "Invalid price range");
@@ -40,6 +44,7 @@ contract LiquidityPool is StructsForLPs{
         });
 
         pools[_poolName] = newPool;
+        lpRewardsToken = IERC20(_lpRewardsToken);
     }
 
     function priceToSqrtPrice(uint256 price) public pure returns (uint160) {
@@ -98,6 +103,10 @@ contract LiquidityPool is StructsForLPs{
         pool.reserve1 += amount1;
         pool.liquidity += liquidity;
 
+        // Update the provider's portion
+        poolPortions[provider][poolName].amount0 += amount0;
+        poolPortions[provider][poolName].amount1 += amount1;
+
         emit LiquidityAdded(poolName, provider, amount0, amount1, liquidity);
 
         return liquidity;
@@ -120,6 +129,43 @@ contract LiquidityPool is StructsForLPs{
         pool.reserve1 -= amount1;
         pool.liquidity -= liquidity;
 
+        // Update the provider's portion
+        poolPortions[provider][poolName].amount0 -= amount0;
+        poolPortions[provider][poolName].amount1 -= amount1;
+
         emit LiquidityRemoved(poolName, provider, amount0, amount1, liquidity);
+    }
+
+    function changeReserveThroughSwap(
+        string memory poolName,
+        address tokenIn,
+        uint256 amountIn,
+        address provider
+    ) external {
+        Pool storage pool = pools[poolName];
+
+        require(pool.token0 == tokenIn || pool.token1 == tokenIn, "Invalid token");
+
+        uint256 amountOut;
+        if (tokenIn == pool.token0) {
+            amountOut = (amountIn * pool.reserve1) / pool.reserve0;
+            pool.reserve0 += amountIn;
+            pool.reserve1 -= amountOut;
+        } else {
+            amountOut = (amountIn * pool.reserve0) / pool.reserve1;
+            pool.reserve1 += amountIn;
+            pool.reserve0 -= amountOut;
+        }
+
+        // Mint LP rewards tokens to the provider
+        uint256 rewards = calculateRewards(amountIn);
+        lpRewardsToken.transfer(provider, rewards);
+
+        emit PoolStateUpdated(address(this), pool.reserve0, pool.reserve1, pool.liquidity);
+    }
+
+    function calculateRewards(uint256 amountIn) internal pure returns (uint256) {
+        // Placeholder: Implement a more complex rewards calculation
+        return amountIn / 10;
     }
 }
