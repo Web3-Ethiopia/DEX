@@ -41,4 +41,41 @@ contract SwapRouter is ISwapRouter {
         emit SwapStateUpdated(msg.sender, swap.amountIn, amountOut, path, swap.deadline, true);
     }
 
+    // Function to execute multi hop swap
+    function executeMultiHopSwap(MultiHopSwap calldata swap) external override returns (uint256 amountOut) {
+        // Ensure the deadline has not passed
+        require(block.timestamp <= swap.deadline, "Swap: Deadline passed");
+
+        uint256 amountIn = swap.amountIn;
+        for (uint256 i = 0; i < swap.path.length - 1; i++) {
+            uint256 price = quotationFetch.getValidatedPriceQuote(swap.path[i], swap.path[i + 1]);
+            require(price > 0, "Swap: Invalid price");
+
+            // Calculate amount out for each hop
+            amountOut = amountIn * price / 1e6; // Assuming USDC has 6 decimal
+
+            // Transfer tokens for each hop (Assume transferFrom and transfer functions are implemented for simplicity)
+            require(IERC20(swap.path[i]).transferFrom(msg.sender, address(this), amountIn), "Swap: Transfer failed");
+            require(IERC20(swap.path[i + 1]).transfer(swap.to, amountOut), "Swap: Transfer failed");
+
+            amountIn = amountOut;
+        }
+
+        require(amountOut >= swap.amountOutMin, "Swap: Insufficient output amount");
+
+        // Emit event
+        emit MultiHopSwapExecuted(msg.sender, swap.path, swap.amountIn, amountOut);
+
+        // Update swap state
+        swapStates[msg.sender] = SwapState(msg.sender, swap.amountIn, amountOut, swap.path, swap.deadline, true);
+
+        emit SwapStateUpdated(msg.sender, swap.amountIn, amountOut, swap.path, swap.deadline, true);
     }
+
+    
+}
+
+interface IERC20 {
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+}
