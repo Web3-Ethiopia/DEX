@@ -60,4 +60,19 @@ contract StructsForLPs {
         liquidityPool.totalFeesCollected = 0;
     }
 
+    function addLiquidity(uint256 amount) external {
+        require(amount > 0, "Amount must be greater than zero");
+
+        LiquidityProvider storage provider = liquidityProviders[msg.sender];
+        if (provider.providerAddress == address(0)) {
+            provider.providerAddress = msg.sender;
+        }
+
+        provider.providedLiquidity += amount;
+        liquidityPool.totalLiquidity += amount;
+
+        emit LiquidityAdded(msg.sender, amount);
+    }
+
+    
 }
