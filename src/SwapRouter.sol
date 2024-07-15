@@ -71,6 +71,19 @@ contract SwapRouter is ISwapRouter {
 
         emit SwapStateUpdated(msg.sender, swap.amountIn, amountOut, swap.path, swap.deadline, true);
     }
+    // Function to get average cost of a swap given the available route
+    function getAvgCostOfSwap(address[] calldata path, uint256 amountIn) external view override returns (uint256 avgCost) {
+        uint256 totalCost = 0;
+
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            uint256 price = quotationFetch.getValidatedPriceQuote(path[i], path[i + 1]);
+            require(price > 0, "Swap: Invalid price");
+
+            totalCost += amountIn * price / 1e6;
+        }
+
+        avgCost = totalCost / (path.length - 1);
+    }
 
     
 }
