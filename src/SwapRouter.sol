@@ -103,6 +103,15 @@ contract SwapRouter is ISwapRouter {
     function swapState(address user) external view override returns (SwapState memory) {
         return swapStates[user];
     }
+    // Function to get the correct price of all pairs involved in swap using IQuotationFetch
+    function getPriceOfPairs(address[] calldata path) external view override returns (uint256[] memory prices) {
+        prices = new uint256[](path.length - 1);
+
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            prices[i] = quotationFetch.getValidatedPriceQuote(path[i], path[i + 1]);
+            require(prices[i] > 0, "Swap: Invalid price");
+        }
+    }
 
     
 }
