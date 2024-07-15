@@ -85,6 +85,25 @@ contract SwapRouter is ISwapRouter {
         avgCost = totalCost / (path.length - 1);
     }
 
+    // Function to start a swap and update the state
+    function startSwap(
+        address user,
+        uint256 amountIn,
+        uint256 amountOut,
+        address[] calldata path,
+        uint256 deadline
+    ) external override {
+        // Update swap state
+        swapStates[user] = SwapState(user, amountIn, amountOut, path, deadline, false);
+
+        emit SwapStateUpdated(user, amountIn, amountOut, path, deadline, false);
+    }
+
+    // Function to compare swap state
+    function swapState(address user) external view override returns (SwapState memory) {
+        return swapStates[user];
+    }
+
     
 }
 
