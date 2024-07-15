@@ -112,7 +112,15 @@ contract SwapRouter is ISwapRouter {
             require(prices[i] > 0, "Swap: Invalid price");
         }
     }
+// Function to get multi-hop quote considering a multi-dimensional array for trades
+    function getMultiHopQuote(address[] memory transactionOrder, uint256 gasLimit) external view override returns (uint256 quote) {
+        quote = quotationFetch.getMultiHopQuote(transactionOrder, gasLimit);
+    }
 
+    // Function to get swap route between two pairs
+    function getSwapRoute(address pair1, address pair2) external view override returns (address[] memory route) {
+        route = quotationFetch.getSwapRoute(pair1, pair2);
+    }
     
 }
 
