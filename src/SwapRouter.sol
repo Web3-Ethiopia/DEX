@@ -13,7 +13,7 @@ contract SwapRouter is ISwapRouter {
         quotationFetch = IQuotationFetch(_quotationFetch);
     }
 
-    function executeSingleHopSwap(SingleHopSwap calldata swap) external override returns (uint256 amountOut) {
+    function executeSingleHopSwap(SingleHopSwap calldata swap) external returns (uint256 amountOut) {
         require(block.timestamp <= swap.deadline, "Swap: Deadline passed");
 
         uint256 price = quotationFetch.getValidatedPriceQuote(swap.tokenIn, swap.tokenOut);
@@ -42,7 +42,7 @@ contract SwapRouter is ISwapRouter {
     }
 
     // Function to execute multi hop swap
-    function executeMultiHopSwap(MultiHopSwap calldata swap) external override returns (uint256 amountOut) {
+    function executeMultiHopSwap(MultiHopSwap calldata swap) external returns (uint256 amountOut) {
         // Ensure the deadline has not passed
         require(block.timestamp <= swap.deadline, "Swap: Deadline passed");
 
@@ -71,8 +71,9 @@ contract SwapRouter is ISwapRouter {
 
         emit SwapStateUpdated(msg.sender, swap.amountIn, amountOut, swap.path, swap.deadline, true);
     }
+
     // Function to get average cost of a swap given the available route
-    function getAvgCostOfSwap(address[] calldata path, uint256 amountIn) external view override returns (uint256 avgCost) {
+    function getAvgCostOfSwap(address[] calldata path, uint256 amountIn) external view returns (uint256 avgCost) {
         uint256 totalCost = 0;
 
         for (uint256 i = 0; i < path.length - 1; i++) {
@@ -92,7 +93,7 @@ contract SwapRouter is ISwapRouter {
         uint256 amountOut,
         address[] calldata path,
         uint256 deadline
-    ) external override {
+    ) external {
         // Update swap state
         swapStates[user] = SwapState(user, amountIn, amountOut, path, deadline, false);
 
@@ -100,11 +101,12 @@ contract SwapRouter is ISwapRouter {
     }
 
     // Function to compare swap state
-    function swapState(address user) external view override returns (SwapState memory) {
+    function swapState(address user) external view returns (SwapState memory) {
         return swapStates[user];
     }
+
     // Function to get the correct price of all pairs involved in swap using IQuotationFetch
-    function getPriceOfPairs(address[] calldata path) external view override returns (uint256[] memory prices) {
+    function getPriceOfPairs(address[] calldata path) external view returns (uint256[] memory prices) {
         prices = new uint256[](path.length - 1);
 
         for (uint256 i = 0; i < path.length - 1; i++) {
@@ -112,16 +114,16 @@ contract SwapRouter is ISwapRouter {
             require(prices[i] > 0, "Swap: Invalid price");
         }
     }
-// Function to get multi-hop quote considering a multi-dimensional array for trades
-    function getMultiHopQuote(address[] memory transactionOrder, uint256 gasLimit) external view override returns (uint256 quote) {
+
+    // Function to get multi-hop quote considering a multi-dimensional array for trades
+    function getMultiHopQuote(address[] memory transactionOrder, uint256 gasLimit) external view returns (uint256 quote) {
         quote = quotationFetch.getMultiHopQuote(transactionOrder, gasLimit);
     }
 
     // Function to get swap route between two pairs
-    function getSwapRoute(address pair1, address pair2) external view override returns (address[] memory route) {
+    function getSwapRoute(address pair1, address pair2) external view returns (address[] memory route) {
         route = quotationFetch.getSwapRoute(pair1, pair2);
     }
-    
 }
 
 interface IERC20 {
