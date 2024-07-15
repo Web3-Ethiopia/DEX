@@ -73,6 +73,25 @@ contract StructsForLPs {
 
         emit LiquidityAdded(msg.sender, amount);
     }
+function collectFees(address providerAddress, uint256 feeAmount) external {
+        require(feeAmount > 0, "Fee amount must be greater than zero");
+        require(liquidityProviders[providerAddress].providerAddress != address(0), "Provider does not exist");
 
+        LiquidityProvider storage provider = liquidityProviders[providerAddress];
+        provider.variableFees += feeAmount;
+        liquidityPool.totalFeesCollected += feeAmount;
+
+        emit FeesCollected(providerAddress, feeAmount);
+    }
+
+    function adjustDecimals(uint256 amount, uint8 fromDecimals, uint8 toDecimals) public pure returns (uint256) {
+        if (fromDecimals > toDecimals) {
+            return amount / (10 ** (fromDecimals - toDecimals));
+        } else if (fromDecimals < toDecimals) {
+            return amount * (10 ** (toDecimals - fromDecimals));
+        } else {
+            return amount;
+        }
+    }
     
 }
