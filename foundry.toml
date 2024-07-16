@@ -2,6 +2,7 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+remappings = ["@openzeppelin/=node_modules/@openzeppelin/", "solmate/=node_modules/solmate/"]
 
 
 
