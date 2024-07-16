@@ -175,8 +175,6 @@ function swap(
         liquidity: pool.liquidity
     });
 
-    // console.log("Initial swap state:", state.amountSpecifiedRemaining, state.amountCalculated, state.sqrtPriceX96, state.tickOfCurrentPrice, state.protocolFee, state.liquidity);
-
     SwapCache memory cache = SwapCache({
         feeProtocol: 0,
         liquidityStart: pool.liquidity,
@@ -186,11 +184,7 @@ function swap(
         computedLatestObservation: false
     });
 
-    // console.log("Initial swap cache:", cache.feeProtocol, cache.liquidityStart, cache.blockTimestamp, cache.isOutOfRange, cache.secondsPerLiquidityCumulativeX128, cache.computedLatestObservation);
-
     uint256 amountOut = _performSwap(_tokenIn, _tokenOut, _amountIn, state, cache, pool);
-
-    console.log("amountOut:", amountOut); // Debugging statement
 
     require(amountOut >= _amountOutMin, "Output amount less than minimum");
 
@@ -198,8 +192,6 @@ function swap(
     console.log("Contract balance of output token after swap:", contractBalanceAfter);
 
     require(contractBalanceAfter >= amountOut, "Contract does not have enough output tokens");
-
-    // console.log("Transferring", amountOut, "of", _tokenOut, "to", _to);
 
     IERC20(_tokenOut).transfer(_to, amountOut);
 
@@ -221,7 +213,6 @@ function _performSwap(
 
     console.log("Performing swap with initial sqrtPriceX96:", state.sqrtPriceX96);
 
-    // Simplified price calculation for demonstration purposes
     uint256 priceDiff = (liquidity * _amountIn) / (uint256(sqrtPriceBX96) * uint256(sqrtPriceCX96));
     uint160 newSqrtPriceX96 = uint160(uint256(sqrtPriceBX96) + priceDiff);
 
