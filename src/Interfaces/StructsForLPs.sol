@@ -1,8 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract StructsForLPs {
+import {Test, console} from "forge-std/Test.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
+interface IAllPoolManager {
+    function fetchTokenReserves(string memory poolName) external view returns (uint256, uint256);
+    function isMultiHopSwapPossible(string memory poolName) external view returns (bool);
+} 
+
+contract StructsForLPs is Ownable {
     
     struct TokenDetails {
         address tokenAddress;
@@ -27,6 +35,15 @@ contract StructsForLPs {
         TokenDetails tokenB;
     }
 
+    struct Pool {
+        uint160 sqrtPriceX96;
+        uint128 liquidity;
+        uint256 lowPrice;
+        uint256 highPrice;
+        address creator;
+        string poolName;
+    }
+
     
     struct LiquidityProvider {
         address providerAddress;
@@ -41,6 +58,11 @@ contract StructsForLPs {
     event LiquidityAdded(address indexed provider, uint256 amount);
 
     event FeesCollected(address indexed provider, uint256 amount);
+
+    Pool[] public pools;
+    mapping(string => uint256) public poolIndex; // Map pool name to index
+    IAllPoolManager public allPoolManager;
+
 
     constructor(
         address _tokenAAddress,

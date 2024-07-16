@@ -4,13 +4,14 @@ pragma solidity ^0.8.0;
 import "./IQuotationFetch.sol";
 
 interface ISwapRouter {
-    struct SwapState {
-        address user;
-        uint256 amountIn;
-        uint256 amountOut;
-        address[] path;
-        uint256 deadline;
-        bool completed;
+
+     struct SwapState {
+        int256 amountSpecifiedRemaining;
+        int256 amountCalculated;
+        uint160 sqrtPriceX96;
+        int24 tickOfCurrentPrice;
+        uint128 protocolFee;
+        uint128 liquidity;
     }
 
     struct SingleHopSwap {
