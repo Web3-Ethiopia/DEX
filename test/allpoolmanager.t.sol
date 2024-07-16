@@ -23,6 +23,7 @@ contract AllPoolManagerTest is Test {
 
     function testAddLiquidity() public {
         allPoolManager.addLiquidity(poolName, amount0, amount1, lowPrice, highPrice, msg.sender);
+        
         // Retrieve the pool address and contract
         address poolAddress = allPoolManager.liquidityPoolMap(poolName);
         LiquidityPool pool = LiquidityPool(poolAddress);
@@ -51,8 +52,6 @@ contract AllPoolManagerTest is Test {
 
         // Retrieve pool reserves before removal
         (uint256 poolBalance0Before, uint256 poolBalance1Before) = pool.getReserves(poolName);
-        emit log_named_uint("Pool balance0 before removal", poolBalance0Before);
-        emit log_named_uint("Pool balance1 before removal", poolBalance1Before);
 
         // Attempt to remove a portion of the liquidity
         uint256 liquidityAmountToRemove = liquidityAmount / 2;
@@ -62,8 +61,6 @@ contract AllPoolManagerTest is Test {
 
         // Retrieve pool reserves after removal
         (uint256 poolBalance0After, uint256 poolBalance1After) = pool.getReserves(poolName);
-        emit log_named_uint("Pool balance0 after removal", poolBalance0After);
-        emit log_named_uint("Pool balance1 after removal", poolBalance1After);
 
         // Assert equals amount of balance of the user for both pairs post removal of liquidity
         assertEq(removedAmount0, amount0 / 2, "Incorrect amount0 removed");
@@ -76,6 +73,10 @@ contract AllPoolManagerTest is Test {
         uint256 userBalance1 = token1Contract.balanceOf(msg.sender);
         assertEq(userBalance0, amount0 / 2, "Incorrect user balance0");
         assertEq(userBalance1, amount1 / 2, "Incorrect user balance1");
+
+        // Assert values for respective pool contract balances after removal
+        assertEq(poolBalance0After, poolBalance0Before - removedAmount0, "Incorrect pool balance0 after removal");
+        assertEq(poolBalance1After, poolBalance1Before - removedAmount1, "Incorrect pool balance1 after removal");
     }
 
     function testTryRemoveLiquidity() public {
