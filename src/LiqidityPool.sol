@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 import "./StructForLp.sol";
 
-
 contract LiquidityPool is StructsForLPs {
     uint256 constant Q96 = 2**96;
 
@@ -40,6 +39,12 @@ contract LiquidityPool is StructsForLPs {
         });
 
         pools[_poolName] = newPool;
+    }
+
+    function getReserves(string memory poolName) external view returns (uint256 reserve0, uint256 reserve1) {
+        Pool storage pool = pools[poolName];
+        reserve0 = pool.reserve0;
+        reserve1 = pool.reserve1;
     }
 
     function priceToSqrtPrice(uint256 price) public pure returns (uint160) {
