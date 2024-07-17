@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {Test, console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import {LiquidityPool} from "./LiqidityPool.sol";
 
 
 interface IAllPoolManager {
@@ -57,6 +58,7 @@ contract LiquidityPool is Ownable {
     IERC20 public token1;
     Pool[] public pools;
     mapping(string => uint256) public poolIndex; // Map pool name to index
+    mapping(string => LiquidityPool) liquidityPoolMap;
     IAllPoolManager public allPoolManager;
     IliquidityPool public liquidityPool;
 
@@ -110,7 +112,7 @@ function swap(
     // console.log("Transferred", _amountIn, "of", _tokenIn, "to the contract");
 
     uint256 contractBalanceBefore = IERC20(_tokenOut).balanceOf(address(this));
-    console.log("Contract balance of output token before swap:", contractBalanceBefore);
+    // console.log("Contract balance of output token before swap:", contractBalanceBefore);
 
     SwapState memory state = SwapState({
         amountSpecifiedRemaining: int256(_amountIn),
@@ -141,13 +143,15 @@ function swap(
     require(amountOut >= _amountOutMin, "Output amount less than minimum");
 
     uint256 contractBalanceAfter = IERC20(_tokenOut).balanceOf(address(this));
-    console.log("Contract balance of output token after swap:", contractBalanceAfter);
+    // console.log("Contract balance of output token after swap:", contractBalanceAfter);
 
     require(contractBalanceAfter >= amountOut, "Contract does not have enough output tokens");
 
     // console.log("Transferring", amountOut, "of", _tokenOut, "to", _to);
 
     IERC20(_tokenOut).transfer(_to, amountOut);
+    // LiquidtyPool.changeReserveThroughSwap(_poolName,_tokenIn,_amountIn,_to);
+    liquidityPoolMap[_poolName].changeReserveThroughSwap(_poolName, _tokenIn, _amountIn, _to);
 
     emit Swap(msg.sender, _tokenIn, _tokenOut, _amountIn, amountOut, _to);
 }
