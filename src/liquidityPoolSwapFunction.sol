@@ -54,6 +54,15 @@ contract LiquidityPool is Ownable {
         address to
     );
 
+    event MultiSwap(
+        address indexed sender,
+        address[] tokensIn,
+        address[] tokensOut,
+        uint256[] amountsIn,
+        uint256 totalAmountOut,
+        address indexed to
+);
+
     IERC20 public token0;
     IERC20 public token1;
     Pool[] public pools;
@@ -138,7 +147,7 @@ function swap(
 
     uint256 amountOut = _performSwap(_tokenIn, _tokenOut, _amountIn, state, cache, pool);
 
-    console.log("amountOut:", amountOut); // Debugging statement
+    // console.log("amountOut:", amountOut); // Debugging statement
 
     require(amountOut >= _amountOutMin, "Output amount less than minimum");
 
@@ -154,6 +163,38 @@ function swap(
     liquidityPoolMap[_poolName].changeReserveThroughSwap(_poolName, _tokenIn, _amountIn, _to);
 
     emit Swap(msg.sender, _tokenIn, _tokenOut, _amountIn, amountOut, _to);
+}
+
+function multiSwap(
+    string[] memory _poolNames,
+    address[] memory _tokensIn,
+    address[] memory _tokensOut,
+    uint256[] memory _amountsIn,
+    uint256[] memory _amountsOutMin,
+    address _to
+) external {
+    require(_poolNames.length == _tokensIn.length, "Mismatched input lengths");
+    require(_tokensIn.length == _tokensOut.length, "Mismatched input lengths");
+    require(_tokensOut.length == _amountsIn.length, "Mismatched input lengths");
+    require(_amountsIn.length == _amountsOutMin.length, "Mismatched input lengths");
+
+    uint256 totalAmountOut = 0;
+    for (uint256 i = 0; i < _poolNames.length; i++) {
+        uint256 amountOut = swap(
+            _poolNames[i],
+            _tokensIn[i],
+            _tokensOut[i],
+            _amountsIn[i],
+            _amountsOutMin[i],
+            address(this)  // Perform intermediate swaps within the contract
+        );
+        totalAmountOut += amountOut;
+    }
+
+    require(totalAmountOut >= _amountsOutMin[_amountsOutMin.length - 1], "Output amount less than minimum");
+    IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
+
+    emit MultiSwap(msg.sender, _tokensIn, _tokensOut, _amountsIn, totalAmountOut, _to);
 }
 
 function _performSwap(
@@ -188,8 +229,8 @@ function _performSwap(
         revert("Invalid token pair");
     }
 
-    console.log("New sqrtPriceX96:", newSqrtPriceX96);
-    console.log("Calculated amountOut:", amountOut);
+    // console.log("New sqrtPriceX96:", newSqrtPriceX96);
+    // console.log("Calculated amountOut:", amountOut);
 
     pool.sqrtPriceX96 = newSqrtPriceX96;
     return amountOut;
