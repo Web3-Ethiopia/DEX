@@ -47,7 +47,7 @@ contract PoolInitializeTest {
     }
 
     function initialize(
-        @PoolKey memory key,
+        PoolKey memory key,
         uint160 sqrtPriceX96,
         bytes memory data
     ) public returns (int24 tick) {
@@ -81,7 +81,7 @@ contract Deployers {
 contract PoolManagerInitializeTest is Test, Deployers, GasSnapshot {
     address currency0;
     address currency1;
-    PoolKey uninitializedKey;
+PoolKey uninitializedKey;
     address mockAddr;
     address hookAddr;
     bytes ZERO_BYTES = "";

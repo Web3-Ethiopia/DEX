@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
-import "DEX/ILiquidityPool.sol";
+import "../src/ILiquidityPool.sol";
 interface ILiquidityPool {
     struct Pool {
         address token0;
@@ -117,7 +117,7 @@ contract LiquidityPool {
         uint256 balance1Before = balance1();
         IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1);
         if (balance1Before + uint256(amount1) < balance1()) 
-           declare revert InsufficientInputAmount;
+           revert InsufficientInputAmount();
         emit Swap(
             msg.sender,
             recipient,
