@@ -93,11 +93,19 @@ contract AllPoolManager {
         return ILiquidityPool(liquidityPoolMap[name]).getPoolDetails(liquidityPoolMap[name]);
     }
 
-    function fetchLiquidityTokenReserves(string memory name) 
-        public 
-        view 
-        returns (uint256 reserve0, uint256 reserve1) 
+    function fetchLiquidityTokenReserves(string memory name)
+        public
+        view
+        returns (uint256 reserve0, uint256 reserve1)
     {
         return ILiquidityPool(liquidityPoolMap[name]).getReserves(liquidityPoolMap[name]);
+    }
+
+    function fetchLiquidityPoolAddress(string memory name)
+        public
+        view
+        returns (address)
+    {
+        return liquidityPoolMap[name];
     }
 }
