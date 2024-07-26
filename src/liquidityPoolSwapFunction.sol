@@ -158,7 +158,7 @@ function swap(
 
     require(contractBalanceAfter >= amountOut, "Contract does not have enough output tokens");
 
-    // console.log("Transferring", amountOut, "of", _tokenOut, "to", _to);
+    // console.log("Transferring", amountOut, "of", _tokenOut, "to", _to)
 
     IERC20(_tokenOut).transfer(_to, amountOut);
     // LiquidtyPool.changeReserveThroughSwap(_poolName,_tokenIn,_amountIn,_to);
