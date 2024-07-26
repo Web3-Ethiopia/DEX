@@ -199,6 +199,13 @@ function multiSwap(
         totalAmountOut += amountOut;
     }
 
+    ILiquidityPool(allPoolManager.fetchLiquidityPoolAddress(_poolNames[i])).changeReserveThroughSwap(
+            _poolNames[i],
+            _tokensIn[i],
+            _amountsIn[i],
+            msg.sender  // or address(this) depending on your rewards logic
+        );
+
     require(totalAmountOut >= _amountsOutMin[_amountsOutMin.length - 1], "Output amount less than minimum");
     IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
 
