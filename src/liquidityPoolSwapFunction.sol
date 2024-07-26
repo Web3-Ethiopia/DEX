@@ -194,7 +194,7 @@ function multiSwap(
             _tokensOut[i],
             _amountsIn[i],
             _amountsOutMin[i],
-            address(this)  // Perform intermediate swaps within the contract
+            address(this)  
         );
         totalAmountOut += amountOut;
     }
@@ -203,7 +203,7 @@ function multiSwap(
             _poolNames[i],
             _tokensIn[i],
             _amountsIn[i],
-            msg.sender  // or address(this) depending on your rewards logic
+            msg.sender  
         );
 
     require(totalAmountOut >= _amountsOutMin[_amountsOutMin.length - 1], "Output amount less than minimum");
