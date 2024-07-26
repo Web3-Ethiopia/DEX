@@ -5,6 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {LiquidityPool} from "./LiqidityPool.sol";
+import {AllPoolManager} from "./AllPoolManager.sol";
 
 
 interface IAllPoolManager {
@@ -65,6 +66,7 @@ contract LiquidityPool is Ownable {
 
     IERC20 public token0;
     IERC20 public token1;
+    AllPoolManager public allPoolManager;
     Pool[] public pools;
     mapping(string => uint256) public poolIndex; // Map pool name to index
     mapping(string => LiquidityPool) liquidityPoolMap;
@@ -180,6 +182,10 @@ function multiSwap(
     require(_tokensOut.length == _amountsIn.length, "Mismatched input lengths");
     require(_amountsIn.length == _amountsOutMin.length, "Mismatched input lengths");
 
+    for (uint256 i = 0; i < _poolNames.length - 1; i++) {
+            require(allPoolManager.isMultiHopSwapPossible(_poolNames[i], _poolNames[i+1]), "Multi-hop swap not possible");
+        }
+
     uint256 totalAmountOut = 0;
     for (uint256 i = 0; i < _poolNames.length; i++) {
         uint256 amountOut = swap(
@@ -197,6 +203,7 @@ function multiSwap(
     IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
 
     emit MultiSwap(msg.sender, _tokensIn, _tokensOut, _amountsIn, totalAmountOut, _to);
+
 }
 
 function _performSwap(
