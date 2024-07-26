@@ -1,0 +1,35 @@
+Daniel.BelayA@DESKTOP-3MO86EB MINGW64 /d/DEX (allpoolmanagerTest_daniel)
+$ forge test -v
+[⠒] Compiling...
+[⠒] Compiling 3 files with Solc 0.8.26
+[⠑] Solc 0.8.26 finished in 2.47s
+Compiler run successful with warnings:
+Warning (5667): Unused try/catch parameter. Remove or comment out the variable name to silence this warning.  
+  --> test/allpoolmanager.t.sol:56:92:
+   |
+56 |         try allPoolManager.removeLiquidity(poolName, liquidityAmount, msg.sender) returns (uint256 removedAmount0, uint256 removedAmount1) {
+   |                                                                                            ^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused try/catch parameter. Remove or comment out the variable name to silence this warning.  
+  --> test/allpoolmanager.t.sol:56:116:
+   |
+56 |         try allPoolManager.removeLiquidity(poolName, liquidityAmount, msg.sender) returns (uint256 removedAmount0, uint256 removedAmount1) {
+   |                                                                                                          
+          ^^^^^^^^^^^^^^^^^^^^^^
+
+
+Ran 5 tests for test/allpoolmanager.t.sol:AllPoolManagerTest
+[PASS] testAddLiquidity() (gas: 126102)
+[PASS] testMultiHopSwap() (gas: 1652579)
+[FAIL. Reason: revert: Insufficient liquidity] testRemoveLiquidity() (gas: 130589)
+[PASS] testTryAddLiquidity() (gas: 126120)
+[PASS] testTryRemoveLiquidity() (gas: 132321)
+Suite result: FAILED. 4 passed; 1 failed; 0 skipped; finished in 2.61ms (3.58ms CPU time)
+
+Ran 1 test suite in 11.92ms (2.61ms CPU time): 4 tests passed, 1 failed, 0 skipped (5 total tests)
+
+Failing tests:
+Encountered 1 failing test in test/allpoolmanager.t.sol:AllPoolManagerTest
+[FAIL. Reason: revert: Insufficient liquidity] testRemoveLiquidity() (gas: 130589)
+
+Encountered a total of 1 failing tests, 4 tests succeeded
