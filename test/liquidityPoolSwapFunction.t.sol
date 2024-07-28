@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
-import {LiquidityPool} from "../src/contract/liquidityPoolSwapFunction.sol"; 
+import {LiquidityPool} from "../src/liquidityPoolSwapFunction.sol"; 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -99,7 +99,7 @@ contract SwapFunctionTest is Test {
 
         // Ensure user1 has sufficient token0 balance for swap
         uint256 initialToken0BalanceUser1 = token0.balanceOf(user1);
-        console.log("Initial token0 balance of user1:", initialToken0BalanceUser1);
+        // console.log("Initial token0 balance of user1:", initialToken0BalanceUser1);
         if (initialToken0BalanceUser1 < SWAP_AMOUNT_IN) {
             uint256 mintAmount = SWAP_AMOUNT_IN - initialToken0BalanceUser1;
             token0.mint(user1, mintAmount);
@@ -108,7 +108,7 @@ contract SwapFunctionTest is Test {
 
         // Check token balances after minting
         uint256 updatedToken0BalanceUser1 = token0.balanceOf(user1);
-        console.log("Updated token0 balance of user1:", updatedToken0BalanceUser1);
+        // console.log("Updated token0 balance of user1:", updatedToken0BalanceUser1);
 
         // Prank as user1 to perform a swap
         address to = user1;
@@ -123,10 +123,10 @@ contract SwapFunctionTest is Test {
         uint256 finalToken1BalanceUser1 = token1.balanceOf(user1);
 
         // Debugging statements to check values
-        console.log("Initial token0BalanceUser1:", initialToken0BalanceUser1);
-        console.log("Initial token1BalanceUser1:", initialToken1BalanceUser1);
-        console.log("Final token0BalanceUser1:", finalToken0BalanceUser1);
-        console.log("Final token1BalanceUser1:", finalToken1BalanceUser1);
+        // console.log("Initial token0BalanceUser1:", initialToken0BalanceUser1);
+        // console.log("Initial token1BalanceUser1:", initialToken1BalanceUser1);
+        // console.log("Final token0BalanceUser1:", finalToken0BalanceUser1);
+        // console.log("Final token1BalanceUser1:", finalToken1BalanceUser1);
 
         // Adjust these assertions based on the expected outcome of the swap
         assertEq(finalToken0BalanceUser1, initialToken0BalanceUser1 - SWAP_AMOUNT_IN); // Expect 500 TK0 to be swapped out

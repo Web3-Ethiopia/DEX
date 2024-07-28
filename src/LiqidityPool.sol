@@ -1,33 +1,22 @@
-
-/* 
-1st. User puts in the amount for the pair provided from their end
-2nd. Calculate from the available liquidity pools what has to be ideal price towards the end of the swap
-3rd. Give the price in the swap component below.
-4th. Make the swap call keeping the amount filled on each transaction involved in the swap cache if multiple transactions are required
-
-*/
-
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "./StructsForLp.sol";
+import "./StructForLp.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-
-
-contract LiquidityPool is StructsForLPs {
+contract LiquidityPool is StructsForLPs, Ownable {
     uint256 constant Q96 = 2**96;
+    IERC20 public lpRewardsToken;
 
-    // The below two mappings have to shift to All pool manager
-    // mapping(string => Pool) public pools;
-    // mapping(address => mapping(address => PoolPortion)) public poolPortions;
-    string public PoolName; 
+    mapping(string => Pool) public pools;
+    mapping(address => mapping(address => PoolPortion)) public poolPortions;
+    mapping(address => uint256) public liquidityProviderVolume; 
+    mapping(address => uint256) public liquidityProviderTime;
 
-    //The address is of the user adding the liquidity
-    mapping(address=>Pool) private userBasedPool;
-
-    event LiquidityAdded(address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
-    event LiquidityRemoved( address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
-    event PoolStateUpdated(uint256 reserve0, uint256 reserve1, uint256 liquidity);
+    event LiquidityAdded(string indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
+    event LiquidityRemoved(string indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
+    event PoolStateUpdated(address indexed pool, uint256 reserve0, uint256 reserve1, uint256 liquidity);
 
     constructor(
         string memory _poolName,
@@ -35,11 +24,11 @@ contract LiquidityPool is StructsForLPs {
         address _token1,
         uint24 _fee,
         uint256 _lowPrice,
-        uint256 _highPrice
+        uint256 _highPrice,
+        address _lpRewardsToken
     ) {
         require(_token0 != address(0) && _token1 != address(0), "Invalid token address");
         require(_lowPrice < _highPrice, "Invalid price range");
-        PoolName= _poolName;
 
         PoolPriceRange memory priceRange = PoolPriceRange({
             minLowerBound: _lowPrice,
@@ -56,7 +45,8 @@ contract LiquidityPool is StructsForLPs {
             priceRange: priceRange
         });
 
-        // pools[_poolName] = newPool;
+        pools[_poolName] = newPool;
+        lpRewardsToken = IERC20(_lpRewardsToken);
     }
 
     function priceToSqrtPrice(uint256 price) public pure returns (uint160) {
@@ -89,13 +79,14 @@ contract LiquidityPool is StructsForLPs {
     }
 
     function addLiquidity(
+        string memory poolName,
         uint256 amount0,
         uint256 amount1,
         uint256 rangeLow,
         uint256 rangeHigh,
         address provider
     ) external returns (uint256 liquidity) {
-        Pool storage pool = userBasedPool[msg.sender];
+        Pool storage pool = pools[poolName];
 
         require(pool.token0 != address(0) && pool.token1 != address(0), "Pool does not exist");
         require(rangeLow < rangeHigh, "Invalid price range");
@@ -113,18 +104,22 @@ contract LiquidityPool is StructsForLPs {
         pool.reserve0 += amount0;
         pool.reserve1 += amount1;
         pool.liquidity += liquidity;
-        //address of the Pool contract being called is further referencing to the poolPortions owner. To be used in AllPoolManager
-        //address(poolPortions[address(this)][poolName]),
-        emit LiquidityAdded( provider, amount0, amount1, liquidity);
+
+        // Update the provider's portion
+        poolPortions[provider][poolName].amount0 += amount0;
+        poolPortions[provider][poolName].amount1 += amount1;
+
+        emit LiquidityAdded(poolName, provider, amount0, amount1, liquidity);
 
         return liquidity;
     }
 
     function removeLiquidity(
+        string memory poolName,
         uint256 liquidity,
         address provider
     ) external {
-        Pool storage pool = userBasedPool[msg.sender];
+        Pool storage pool = pools[poolName];
 
         require(pool.token0 != address(0) && pool.token1 != address(0), "Pool does not exist");
         require(liquidity <= pool.liquidity, "Insufficient liquidity");
@@ -136,8 +131,45 @@ contract LiquidityPool is StructsForLPs {
         pool.reserve1 -= amount1;
         pool.liquidity -= liquidity;
 
-        //address of the Pool contract being called is further referencing to the poolPortions owner. To be used in AllPoolManager
-//address(poolPortions[address(this)][poolName]),
-        emit LiquidityRemoved( provider, amount0, amount1, liquidity);
+        // Update the provider's portion
+        poolPortions[provider][poolName].amount0 -= amount0;
+        poolPortions[provider][poolName].amount1 -= amount1;
+
+        emit LiquidityRemoved(poolName, provider, amount0, amount1, liquidity);
+    }
+
+    function changeReserveThroughSwap(
+        string memory poolName,
+        address tokenIn,
+        uint256 amountIn,
+        address provider
+    ) external {
+        Pool storage pool = pools[poolName];
+
+        require(pool.token0 == tokenIn || pool.token1 == tokenIn, "Invalid token");
+
+        uint256 amountOut;
+        if (tokenIn == pool.token0) {
+            amountOut = (amountIn * pool.reserve1) / pool.reserve0;
+            pool.reserve0 += amountIn;
+            pool.reserve1 -= amountOut;
+        } else {
+            amountOut = (amountIn * pool.reserve0) / pool.reserve1;
+            pool.reserve1 += amountIn;
+            pool.reserve0 -= amountOut;
+        }
+
+        // Mint LP rewards tokens to the provider
+        uint256 rewards = calculateRewards(amountIn);
+        lpRewardsToken.transfer(provider, rewards);
+
+        emit PoolStateUpdated(address(this), pool.reserve0, pool.reserve1, pool.liquidity);
+    }
+
+      function calculateRewards(uint256 amountIn, uint256 totalVolume, address provider) internal view returns (uint256) {
+        uint256 volumeFactor = (liquidityProviderVolume[provider] * 1e18) / totalVolume;
+        uint256 timeFactor = (block.timestamp - liquidityProviderTime[provider]) * 1e18 / (30 days); // Example: 30 days as a base time unit
+        uint256 reward = amountIn * volumeFactor * timeFactor / 1e36; // Adjusting for decimal scaling
+        return reward;
     }
 }
