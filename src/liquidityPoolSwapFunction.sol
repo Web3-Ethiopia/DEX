@@ -162,7 +162,7 @@ function swap(
 
     IERC20(_tokenOut).transfer(_to, amountOut);
     // LiquidtyPool.changeReserveThroughSwap(_poolName,_tokenIn,_amountIn,_to);
-    liquidityPoolMap[_poolName].changeReserveThroughSwap(_poolName, _tokenIn, _amountIn, _to);
+    // liquidityPoolMap[_poolName].changeReserveThroughSwap(_poolName, _tokenIn, _amountIn, _to);
 
     ILiquidityPool(allPoolManager.fetchLiquidityPoolAddress(_poolName)).changeReserveThroughSwap(_poolName, _tokenIn, _amountIn, address(this));
 
