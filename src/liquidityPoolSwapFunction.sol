@@ -8,12 +8,8 @@ import {LiquidityPool} from "./LiqidityPool.sol";
 import {AllPoolManager} from "./AllPoolManger.sol";
 
 
-interface IAllPoolManager {
-    function fetchTokenReserves(string memory poolName) external view returns (uint256, uint256);
-    function isMultiHopSwapPossible(string memory poolName) external view returns (bool);
-}
 
-interface IliquidityPool {
+interface ILiquidityPool {
     function liquidity0(uint256 amount, uint160 pa, uint160 pb) external pure  returns(uint256);
     function liquidity1(uint256 amount, uint160 pa, uint160 pb) external pure returns(uint256);
 }
@@ -119,8 +115,12 @@ function swap(
 
     // console.log("Swapping", _amountIn, "of", _tokenIn, "to", _tokenOut, "with min output", _amountOutMin);
 
-    IERC20(_tokenIn).transferFrom(msg.sender, address(this), _amountIn);
+    // IERC20(_tokenIn).transferFrom(msg.sender, address(this), _amountIn);
     // console.log("Transferred", _amountIn, "of", _tokenIn, "to the contract");
+
+    bool success = IERC20(_tokenIn).transferFrom(msg.sender, address(this), _amountIn);
+    require(success, "Transfer from failed");
+
 
     uint256 contractBalanceBefore = IERC20(_tokenOut).balanceOf(address(this));
     // console.log("Contract balance of output token before swap:", contractBalanceBefore);
@@ -160,7 +160,10 @@ function swap(
 
     // console.log("Transferring", amountOut, "of", _tokenOut, "to", _to)
 
-    IERC20(_tokenOut).transfer(_to, amountOut);
+    // IERC20(_tokenOut).transfer(_to, amountOut);
+    bool success = IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
+    require(success, "Transfer to recipient failed");
+
     // LiquidtyPool.changeReserveThroughSwap(_poolName,_tokenIn,_amountIn,_to);
     // liquidityPoolMap[_poolName].changeReserveThroughSwap(_poolName, _tokenIn, _amountIn, _to);
 
@@ -197,7 +200,6 @@ function multiSwap(
             address(this)  
         );
         totalAmountOut += amountOut;
-    }
 
     ILiquidityPool(allPoolManager.fetchLiquidityPoolAddress(_poolNames[i])).changeReserveThroughSwap(
             _poolNames[i],
@@ -205,9 +207,14 @@ function multiSwap(
             _amountsIn[i],
             msg.sender  
         );
+    }
+
 
     require(totalAmountOut >= _amountsOutMin[_amountsOutMin.length - 1], "Output amount less than minimum");
-    IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
+    // IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
+
+    bool success = IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
+    require(success, "Transfer to recipient failed");
 
     emit MultiSwap(msg.sender, _tokensIn, _tokensOut, _amountsIn, totalAmountOut, _to);
 
