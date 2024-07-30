@@ -5,7 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {LiquidityPool} from "./LiqidityPool.sol";
-import {AllPoolManager} from "./AllPoolManager.sol";
+import {AllPoolManager} from "./AllPoolManger.sol";
 
 
 interface IAllPoolManager {
