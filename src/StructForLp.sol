@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract StructsForLPs {
-     struct PoolPriceRange {
+interface StructsForLPs {
+    struct PoolPriceRange {
         uint256 minLowerBound;
         uint256 maxUpperBound;
     }
@@ -15,9 +15,6 @@ contract StructsForLPs {
         uint256 liquidity;
         PoolPriceRange priceRange;
     }
-
-   
-
     struct PoolPortion {
         address poolAddress;
         uint256 rangeLow;

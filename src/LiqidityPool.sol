@@ -6,17 +6,34 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract LiquidityPool is StructsForLPs, Ownable {
-    uint256 constant Q96 = 2**96;
+    uint256 constant Q96 = 2 ** 96;
     IERC20 public lpRewardsToken;
 
     mapping(string => Pool) public pools;
-    mapping(address => mapping(address => PoolPortion)) public poolPortions;
-    mapping(address => uint256) public liquidityProviderVolume; 
+    mapping(address => PoolPortion) public poolPortions;
+    mapping(address => uint256) public liquidityProviderVolume;
     mapping(address => uint256) public liquidityProviderTime;
 
-    event LiquidityAdded(string indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
-    event LiquidityRemoved(string indexed pool, address indexed provider, uint256 amount0, uint256 amount1, uint256 liquidity);
-    event PoolStateUpdated(address indexed pool, uint256 reserve0, uint256 reserve1, uint256 liquidity);
+    event LiquidityAdded(
+        string indexed pool,
+        address indexed provider,
+        uint256 amount0,
+        uint256 amount1,
+        uint256 liquidity
+    );
+    event LiquidityRemoved(
+        string indexed pool,
+        address indexed provider,
+        uint256 amount0,
+        uint256 amount1,
+        uint256 liquidity
+    );
+    event PoolStateUpdated(
+        address indexed pool,
+        uint256 reserve0,
+        uint256 reserve1,
+        uint256 liquidity
+    );
 
     constructor(
         string memory _poolName,
@@ -27,7 +44,10 @@ contract LiquidityPool is StructsForLPs, Ownable {
         uint256 _highPrice,
         address _lpRewardsToken
     ) {
-        require(_token0 != address(0) && _token1 != address(0), "Invalid token address");
+        require(
+            _token0 != address(0) && _token1 != address(0),
+            "Invalid token address"
+        );
         require(_lowPrice < _highPrice, "Invalid price range");
 
         PoolPriceRange memory priceRange = PoolPriceRange({
@@ -64,18 +84,28 @@ contract LiquidityPool is StructsForLPs, Ownable {
         return z;
     }
 
-    function liquidity0(uint256 amount, uint160 pa, uint160 pb) public pure returns (uint256) {
+    function liquidity0(
+        uint256 amount,
+        uint160 pa,
+        uint160 pb
+    ) public pure returns (uint256) {
         if (pa > pb) {
             (pa, pb) = (pb, pa);
         }
-        return (amount * uint256(pa) * uint256(pb) / Q96) / (uint256(pb) - uint256(pa));
+        return
+            ((amount * uint256(pa) * uint256(pb)) / Q96) /
+            (uint256(pb) - uint256(pa));
     }
 
-    function liquidity1(uint256 amount, uint160 pa, uint160 pb) public pure returns (uint256) {
+    function liquidity1(
+        uint256 amount,
+        uint160 pa,
+        uint160 pb
+    ) public pure returns (uint256) {
         if (pa > pb) {
             (pa, pb) = (pb, pa);
         }
-        return amount * Q96 / (uint256(pb) - uint256(pa));
+        return (amount * Q96) / (uint256(pb) - uint256(pa));
     }
 
     function addLiquidity(
@@ -88,9 +118,16 @@ contract LiquidityPool is StructsForLPs, Ownable {
     ) external returns (uint256 liquidity) {
         Pool storage pool = pools[poolName];
 
-        require(pool.token0 != address(0) && pool.token1 != address(0), "Pool does not exist");
+        require(
+            pool.token0 != address(0) && pool.token1 != address(0),
+            "Pool does not exist"
+        );
         require(rangeLow < rangeHigh, "Invalid price range");
-        require(pool.priceRange.minLowerBound <= rangeLow && pool.priceRange.maxUpperBound >= rangeHigh, "Out of bounds price range");
+        require(
+            pool.priceRange.minLowerBound <= rangeLow &&
+                pool.priceRange.maxUpperBound >= rangeHigh,
+            "Out of bounds price range"
+        );
 
         uint160 sqrtPriceLow = priceToSqrtPrice(rangeLow);
         uint160 sqrtPriceHigh = priceToSqrtPrice(rangeHigh);
@@ -106,8 +143,8 @@ contract LiquidityPool is StructsForLPs, Ownable {
         pool.liquidity += liquidity;
 
         // Update the provider's portion
-        poolPortions[provider][poolName].amount0 += amount0;
-        poolPortions[provider][poolName].amount1 += amount1;
+        poolPortions[provider].amount0 += amount0;
+        poolPortions[provider].amount1 += amount1;
 
         emit LiquidityAdded(poolName, provider, amount0, amount1, liquidity);
 
@@ -121,7 +158,10 @@ contract LiquidityPool is StructsForLPs, Ownable {
     ) external {
         Pool storage pool = pools[poolName];
 
-        require(pool.token0 != address(0) && pool.token1 != address(0), "Pool does not exist");
+        require(
+            pool.token0 != address(0) && pool.token1 != address(0),
+            "Pool does not exist"
+        );
         require(liquidity <= pool.liquidity, "Insufficient liquidity");
 
         uint256 amount0 = (pool.reserve0 * liquidity) / pool.liquidity;
@@ -132,8 +172,8 @@ contract LiquidityPool is StructsForLPs, Ownable {
         pool.liquidity -= liquidity;
 
         // Update the provider's portion
-        poolPortions[provider][poolName].amount0 -= amount0;
-        poolPortions[provider][poolName].amount1 -= amount1;
+        poolPortions[provider].amount0 -= amount0;
+        poolPortions[provider].amount1 -= amount1;
 
         emit LiquidityRemoved(poolName, provider, amount0, amount1, liquidity);
     }
@@ -146,7 +186,10 @@ contract LiquidityPool is StructsForLPs, Ownable {
     ) external {
         Pool storage pool = pools[poolName];
 
-        require(pool.token0 == tokenIn || pool.token1 == tokenIn, "Invalid token");
+        require(
+            pool.token0 == tokenIn || pool.token1 == tokenIn,
+            "Invalid token"
+        );
 
         uint256 amountOut;
         if (tokenIn == pool.token0) {
@@ -163,13 +206,28 @@ contract LiquidityPool is StructsForLPs, Ownable {
         uint256 rewards = calculateRewards(amountIn);
         lpRewardsToken.transfer(provider, rewards);
 
-        emit PoolStateUpdated(address(this), pool.reserve0, pool.reserve1, pool.liquidity);
+        emit PoolStateUpdated(
+            address(this),
+            pool.reserve0,
+            pool.reserve1,
+            pool.liquidity
+        );
     }
 
-      function calculateRewards(uint256 amountIn, uint256 totalVolume, address provider) internal view returns (uint256) {
-        uint256 volumeFactor = (liquidityProviderVolume[provider] * 1e18) / totalVolume;
-        uint256 timeFactor = (block.timestamp - liquidityProviderTime[provider]) * 1e18 / (30 days); // Example: 30 days as a base time unit
-        uint256 reward = amountIn * volumeFactor * timeFactor / 1e36; // Adjusting for decimal scaling
+    function calculateRewards(
+        uint256 amountIn,
+        uint256 totalVolume,
+        address provider
+    ) internal view returns (uint256) {
+        uint256 volumeFactor = (liquidityProviderVolume[provider] * 1e18) /
+            totalVolume;
+        uint256 timeFactor = ((block.timestamp -
+            liquidityProviderTime[provider]) * 1e18) / (30 days); // Example: 30 days as a base time unit
+        uint256 reward = (amountIn * volumeFactor * timeFactor) / 1e36; // Adjusting for decimal scaling
         return reward;
+    }
+
+    function getMiniPool(address poolOwner) public view returns (Pool memory) {
+        return poolPortions[poolOwner];
     }
 }
