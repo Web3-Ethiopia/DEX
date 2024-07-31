@@ -5,20 +5,38 @@ import {Test, console} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {LiquidityPool} from "./LiqidityPool.sol";
-import {AllPoolManager} from "./AllPoolManager.sol";
+import {AllPoolManager} from "./AllPoolManger.sol";
 
 
-interface IAllPoolManager {
-    function fetchTokenReserves(string memory poolName) external view returns (uint256, uint256);
-    function isMultiHopSwapPossible(string memory poolName) external view returns (bool);
+
+// interface ILiquidityPool {
+//     function liquidity0(uint256 amount, uint160 pa, uint160 pb) external pure  returns(uint256);
+//     function liquidity1(uint256 amount, uint160 pa, uint160 pb) external pure returns(uint256);
+// }
+
+// interface IAllPoolManager {
+//     function fetchTokenReserves(
+//         string memory poolName
+//     ) external view returns (uint256, uint256);
+//     function isMultiHopSwapPossible(
+//         string memory poolName
+//     ) external view returns (bool);
+// }
+
+interface ILiquidityPool {
+    function liquidity0(
+        uint256 amount,
+        uint160 pa,
+        uint160 pb
+    ) external pure returns (uint256);
+    function liquidity1(
+        uint256 amount,
+        uint160 pa,
+        uint160 pb
+    ) external pure returns (uint256);
 }
 
-interface IliquidityPool {
-    function liquidity0(uint256 amount, uint160 pa, uint160 pb) external pure  returns(uint256);
-    function liquidity1(uint256 amount, uint160 pa, uint160 pb) external pure returns(uint256);
-}
-
-contract LiquidityPool is Ownable {
+contract SwapContract  is Ownable {
     struct Pool {
         uint160 sqrtPriceX96;
         uint128 liquidity;
@@ -70,13 +88,13 @@ contract LiquidityPool is Ownable {
     Pool[] public pools;
     mapping(string => uint256) public poolIndex; // Map pool name to index
     mapping(string => LiquidityPool) liquidityPoolMap;
-    IAllPoolManager public allPoolManager;
-    IliquidityPool public liquidityPool;
+    // IAllPoolManager public allPoolManager;
+     LiquidityPool public liquidityPool;
 
     constructor(address _token0, address _token1, address initialOwner, address _IliquidityPool) Ownable(initialOwner) {
         token0 = IERC20(_token0);
         token1 = IERC20(_token1);
-        liquidityPool = IliquidityPool(_IliquidityPool);
+        liquidityPool = LiquidityPool(_IliquidityPool);
     }
 
     function createPool(
@@ -119,8 +137,12 @@ function swap(
 
     // console.log("Swapping", _amountIn, "of", _tokenIn, "to", _tokenOut, "with min output", _amountOutMin);
 
-    IERC20(_tokenIn).transferFrom(msg.sender, address(this), _amountIn);
+    // IERC20(_tokenIn).transferFrom(msg.sender, address(this), _amountIn);
     // console.log("Transferred", _amountIn, "of", _tokenIn, "to the contract");
+
+    bool success = IERC20(_tokenIn).transferFrom(msg.sender, address(this), _amountIn);
+    require(success, "Transfer from failed");
+
 
     uint256 contractBalanceBefore = IERC20(_tokenOut).balanceOf(address(this));
     // console.log("Contract balance of output token before swap:", contractBalanceBefore);
@@ -160,7 +182,10 @@ function swap(
 
     // console.log("Transferring", amountOut, "of", _tokenOut, "to", _to)
 
-    IERC20(_tokenOut).transfer(_to, amountOut);
+    // IERC20(_tokenOut).transfer(_to, amountOut);
+     success = IERC20(_tokenOut[_tokenOut.length - 1]).transfer(_to, amountOut);
+    require(success, "Transfer to recipient failed");
+
     // LiquidtyPool.changeReserveThroughSwap(_poolName,_tokenIn,_amountIn,_to);
     // liquidityPoolMap[_poolName].changeReserveThroughSwap(_poolName, _tokenIn, _amountIn, _to);
 
@@ -188,7 +213,7 @@ function multiSwap(
 
     uint256 totalAmountOut = 0;
     for (uint256 i = 0; i < _poolNames.length; i++) {
-        uint256 amountOut = swap(
+        uint256 amountOut = Swap(
             _poolNames[i],
             _tokensIn[i],
             _tokensOut[i],
@@ -197,17 +222,22 @@ function multiSwap(
             address(this)  
         );
         totalAmountOut += amountOut;
-    }
 
-    ILiquidityPool(allPoolManager.fetchLiquidityPoolAddress(_poolNames[i])).changeReserveThroughSwap(
+            ILiquidityPool(allPoolManager.fetchLiquidityPoolAddress(_poolNames[i])).changeReserveThroughSwap(
             _poolNames[i],
             _tokensIn[i],
             _amountsIn[i],
             msg.sender  
         );
 
+    }
+
+
     require(totalAmountOut >= _amountsOutMin[_amountsOutMin.length - 1], "Output amount less than minimum");
-    IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
+    // IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
+
+    bool success = IERC20(_tokensOut[_tokensOut.length - 1]).transfer(_to, totalAmountOut);
+    require(success, "Transfer to recipient failed");
 
     emit MultiSwap(msg.sender, _tokensIn, _tokensOut, _amountsIn, totalAmountOut, _to);
 
@@ -227,8 +257,8 @@ function _performSwap(
     uint256 liquidity = state.liquidity;
 
     // console.log("Performing swap with initial sqrtPriceX96:", state.sqrtPriceX96);
-    uint256 liquidity0 = liquidityPool.liquidity0(_amountIn, sqrtPriceBX96, sqrtPriceCX96);
-    uint256 liquidity1 = liquidityPool.liquidity1(_amountIn, sqrtPriceBX96, sqrtPriceCX96);
+    uint256 liquidity0 = LiquidityPool.liquidity0(_amountIn, sqrtPriceBX96, sqrtPriceCX96);
+    uint256 liquidity1 = LiquidityPool.liquidity1(_amountIn, sqrtPriceBX96, sqrtPriceCX96);
 
     // Simplified price calculation for demonstration purposes
     uint256 priceDiff = (liquidity * liquidity0) / liquidity1;
